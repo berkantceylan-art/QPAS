@@ -33,7 +33,7 @@ const PORTALS: Portal[] = [
     features: ["Rol & Yetki Yönetimi", "Sistem Denetim Kayıtları", "Global Ayarlar"],
     gradient: "from-indigo-500 via-violet-500 to-purple-500",
     ring: "group-hover:shadow-[0_0_60px_-10px_rgba(139,92,246,0.45)]",
-    href: "#admin",
+    href: "/admin/login",
   },
   {
     icon: Briefcase,

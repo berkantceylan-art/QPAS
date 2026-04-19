@@ -1,8 +1,11 @@
 import {
   ArrowRight,
   Briefcase,
+  KeyRound,
   ShieldCheck,
+  Smartphone,
   UserCircle2,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -17,6 +20,7 @@ type Portal = {
   gradient: string;
   ring: string;
   href: string;
+  badge?: string;
 };
 
 const PORTALS: Portal[] = [
@@ -47,12 +51,24 @@ const PORTALS: Portal[] = [
     title: "Çalışan Self-Servis",
     tagline: "Daily Logs & Shift Tracking",
     description:
-      "Vardiyalar, izinler ve günlük girişler; hepsi çalışanın kendi cebinden tek dokunuşla.",
-    features: ["Vardiya Takvimi", "İzin Talepleri", "Günlük Kayıtlar"],
+      "Özlük, bordro, puantaj, izin, avans ve BES; rolünüze bağlı ek modüller otomatik açılır.",
+    features: [
+      "Mobil PDKS (QR / NFC / Geofencing)",
+      "Bordro, Puantaj & Özlük",
+      "İzin, Avans & BES Talepleri",
+      "Rol Bazlı Modül Erişimi",
+    ],
     gradient: "from-amber-500 via-orange-500 to-rose-500",
     ring: "group-hover:shadow-[0_0_60px_-10px_rgba(251,146,60,0.45)]",
     href: "#employee",
+    badge: "Mobil",
   },
+];
+
+const TRUST_BADGES = [
+  { icon: KeyRound, label: "Tek Hesap (SSO)" },
+  { icon: UsersRound, label: "Rol Bazlı Yetki (RBAC)" },
+  { icon: Smartphone, label: "Mobil PDKS Desteği" },
 ];
 
 export default function PortalHub() {
@@ -69,10 +85,11 @@ export default function PortalHub() {
             Portal Erişim Merkezi
           </p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
-            Rolünüze özel giriş, saniyeler içinde
+            Tek hesap, rolünüze özel modüller
           </h2>
           <p className="mt-4 text-base text-slate-600 dark:text-slate-400">
-            Üç farklı portal; aynı güvenlik standardı, aynı tutarlı deneyim.
+            Tek bir giriş; self-servis her zaman açık, yetkili olduğunuz modüller
+            rolünüze göre otomatik görünür.
           </p>
         </div>
 
@@ -93,6 +110,7 @@ export default function PortalHub() {
               gradient,
               ring,
               href,
+              badge,
             }) => (
               <motion.a
                 key={title}
@@ -110,6 +128,15 @@ export default function PortalHub() {
                   aria-hidden="true"
                   className={`pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${gradient} opacity-70`}
                 />
+
+                {badge && (
+                  <span
+                    className={`absolute right-5 top-5 inline-flex items-center gap-1 rounded-full bg-gradient-to-r ${gradient} px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow-md`}
+                  >
+                    <Smartphone className="h-3 w-3" />
+                    {badge}
+                  </span>
+                )}
 
                 <div className="relative">
                   <div
@@ -156,6 +183,15 @@ export default function PortalHub() {
             ),
           )}
         </motion.div>
+
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-slate-600 dark:text-slate-400">
+          {TRUST_BADGES.map(({ icon: Icon, label }) => (
+            <div key={label} className="flex items-center gap-2">
+              <Icon className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

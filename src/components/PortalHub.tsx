@@ -5,6 +5,8 @@ import {
   UserCircle2,
   type LucideIcon,
 } from "lucide-react";
+import { motion } from "framer-motion";
+import { cardReveal, staggerContainer } from "./motion/variants";
 
 type Portal = {
   icon: LucideIcon;
@@ -74,7 +76,13 @@ export default function PortalHub() {
           </p>
         </div>
 
-        <div className="mt-16 grid gap-6 md:grid-cols-3">
+        <motion.div
+          className="mt-16 grid gap-6 md:grid-cols-3"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-80px" }}
+        >
           {PORTALS.map(
             ({
               icon: Icon,
@@ -86,10 +94,13 @@ export default function PortalHub() {
               ring,
               href,
             }) => (
-              <a
+              <motion.a
                 key={title}
                 href={href}
-                className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl glass p-7 transition-all duration-300 hover:-translate-y-1 ${ring}`}
+                variants={cardReveal}
+                whileHover={{ y: -4 }}
+                transition={{ type: "spring", stiffness: 260, damping: 22 }}
+                className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl glass p-7 transition-shadow duration-300 ${ring}`}
               >
                 <div
                   aria-hidden="true"
@@ -141,10 +152,10 @@ export default function PortalHub() {
                     <ArrowRight className="h-4 w-4" />
                   </span>
                 </div>
-              </a>
+              </motion.a>
             ),
           )}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

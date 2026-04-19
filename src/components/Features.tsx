@@ -1,5 +1,7 @@
 import { Boxes, Clock, LineChart, type LucideIcon } from "lucide-react";
+import { motion } from "framer-motion";
 import { Card, CardDescription, CardHeader, CardTitle } from "./ui/Card";
+import { cardReveal, staggerContainer } from "./motion/variants";
 
 type Feature = {
   icon: LucideIcon;
@@ -49,30 +51,35 @@ export default function Features() {
           </p>
         </div>
 
-        <div className="mt-16 grid gap-6 md:grid-cols-3">
+        <motion.div
+          className="mt-16 grid gap-6 md:grid-cols-3"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-80px" }}
+        >
           {FEATURES.map(({ icon: Icon, title, description, gradient }) => (
-            <Card
-              key={title}
-              className="group relative overflow-hidden p-2 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 hover:border-slate-300 dark:hover:border-white/20"
-            >
-              <CardHeader>
+            <motion.div key={title} variants={cardReveal}>
+              <Card className="group relative h-full overflow-hidden p-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 hover:border-slate-300 dark:hover:border-white/20">
+                <CardHeader>
+                  <div
+                    className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-lg shadow-black/5 ring-1 ring-white/20`}
+                  >
+                    <Icon className="h-6 w-6 text-white" strokeWidth={2.25} />
+                  </div>
+                  <CardTitle>{title}</CardTitle>
+                  <CardDescription className="leading-relaxed">
+                    {description}
+                  </CardDescription>
+                </CardHeader>
                 <div
-                  className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-lg shadow-black/5 ring-1 ring-white/20`}
-                >
-                  <Icon className="h-6 w-6 text-white" strokeWidth={2.25} />
-                </div>
-                <CardTitle>{title}</CardTitle>
-                <CardDescription className="leading-relaxed">
-                  {description}
-                </CardDescription>
-              </CardHeader>
-              <div
-                aria-hidden="true"
-                className={`pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r ${gradient} opacity-0 transition-opacity group-hover:opacity-60`}
-              />
-            </Card>
+                  aria-hidden="true"
+                  className={`pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r ${gradient} opacity-0 transition-opacity group-hover:opacity-60`}
+                />
+              </Card>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

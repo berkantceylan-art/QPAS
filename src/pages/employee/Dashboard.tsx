@@ -1,64 +1,61 @@
 import {
   ArrowUpRight,
+  CalendarCheck2,
+  CheckCircle2,
   Clock,
-  FileCheck2,
-  TrendingUp,
-  UserPlus,
-  Users,
+  HandCoins,
+  SmartphoneNfc,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cardReveal, staggerContainer } from "@/components/motion/variants";
 import MiniChart from "@/components/portal/MiniChart";
 import { useAuth } from "@/hooks/useAuth";
+import { Link } from "react-router-dom";
 
 type Kpi = {
   label: string;
   value: string;
-  delta: string;
-  deltaPositive: boolean;
+  sub: string;
   tint: string;
   icon: LucideIcon;
 };
 
 const KPIS: Kpi[] = [
   {
-    label: "Toplam Kullanıcı",
-    value: "1.284",
-    delta: "+3,2% / hafta",
-    deltaPositive: true,
-    tint: "from-cyan-500 to-sky-500",
-    icon: Users,
-  },
-  {
-    label: "Aktif Oturum",
-    value: "312",
-    delta: "+8 / saat",
-    deltaPositive: true,
-    tint: "from-indigo-500 to-purple-500",
-    icon: TrendingUp,
-  },
-  {
-    label: "Günlük PDKS Girişi",
-    value: "1.119",
-    delta: "+1,8% / dün",
-    deltaPositive: true,
-    tint: "from-emerald-500 to-teal-500",
+    label: "Bu Haftaki Çalışma",
+    value: "38 sa 20 dk",
+    sub: "Hedef: 40 sa",
+    tint: "from-amber-500 to-orange-500",
     icon: Clock,
   },
   {
+    label: "Bu Ay Net Maaş",
+    value: "₺24.500",
+    sub: "Ödeme: 30 Nisan",
+    tint: "from-orange-500 to-rose-500",
+    icon: Wallet,
+  },
+  {
+    label: "Kalan Yıllık İzin",
+    value: "12 gün",
+    sub: "1 talep bekliyor",
+    tint: "from-rose-500 to-pink-500",
+    icon: CalendarCheck2,
+  },
+  {
     label: "Açık Talepler",
-    value: "27",
-    delta: "-4 / dün",
-    deltaPositive: true,
-    tint: "from-amber-500 to-rose-500",
-    icon: FileCheck2,
+    value: "2",
+    sub: "İzin + Avans",
+    tint: "from-pink-500 to-amber-500",
+    icon: HandCoins,
   },
 ];
 
 type Activity = {
-  who: string;
-  action: string;
+  label: string;
+  detail: string;
   when: string;
   tint: string;
   icon: LucideIcon;
@@ -66,39 +63,32 @@ type Activity = {
 
 const ACTIVITY: Activity[] = [
   {
-    who: "Ayşe Y.",
-    action: "yeni bir kullanıcı ekledi (sevcan.k@qpass.io)",
-    when: "2 dk önce",
-    tint: "from-cyan-500 to-sky-500",
-    icon: UserPlus,
+    label: "Giriş",
+    detail: "Bugün 08:52 — Konum doğrulandı",
+    when: "bugün",
+    tint: "from-amber-500 to-orange-500",
+    icon: CheckCircle2,
   },
   {
-    who: "Mert T.",
-    action: "İK Analitiği modülüne rol ataması yaptı",
-    when: "14 dk önce",
-    tint: "from-indigo-500 to-purple-500",
-    icon: Users,
+    label: "İzin Talebi",
+    detail: "23–27 Nisan — Onay bekleniyor",
+    when: "dün",
+    tint: "from-orange-500 to-rose-500",
+    icon: CalendarCheck2,
   },
   {
-    who: "Sistem",
-    action: "günlük puantaj özetini oluşturdu",
-    when: "1 saat önce",
-    tint: "from-emerald-500 to-teal-500",
-    icon: FileCheck2,
+    label: "Avans Talebi",
+    detail: "₺3.000 — İşlemde",
+    when: "2 gün önce",
+    tint: "from-rose-500 to-pink-500",
+    icon: HandCoins,
   },
   {
-    who: "Berkant C.",
-    action: "ödeme ayarlarını güncelledi",
-    when: "3 saat önce",
-    tint: "from-amber-500 to-rose-500",
-    icon: TrendingUp,
-  },
-  {
-    who: "Sistem",
-    action: "52 çalışan için bordro hesaplamasını tamamladı",
-    when: "Dün, 18:04",
-    tint: "from-cyan-500 to-indigo-500",
-    icon: Clock,
+    label: "Bordro",
+    detail: "Mart bordrosu yayınlandı",
+    when: "31 Mar",
+    tint: "from-pink-500 to-amber-500",
+    icon: Wallet,
   },
 ];
 
@@ -108,47 +98,75 @@ function todayLabel() {
       weekday: "long",
       day: "numeric",
       month: "long",
-      year: "numeric",
     }).format(new Date());
   } catch {
     return new Date().toLocaleDateString();
   }
 }
 
-export default function Dashboard() {
+function shiftStatus() {
+  const hour = new Date().getHours();
+  if (hour >= 8 && hour < 18) return { label: "Vardiyada", color: "bg-emerald-500" };
+  return { label: "Vardiya Dışı", color: "bg-slate-400" };
+}
+
+export default function EmployeeDashboard() {
   const { profile, user } = useAuth();
   const firstName =
     profile?.full_name?.split(" ")[0] ||
     user?.email?.split("@")[0] ||
-    "Admin";
+    "Çalışan";
+  const status = shiftStatus();
 
   return (
     <div className="space-y-8">
+      {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-400">
-            Genel Bakış
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-orange-600 dark:text-orange-400">
+            Kişisel Panel
           </p>
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
-            Hoş geldin, <span className="gradient-text">{firstName}</span>
+            Günaydın,{" "}
+            <span className="bg-gradient-to-r from-amber-500 to-rose-500 bg-clip-text text-transparent">
+              {firstName}
+            </span>
           </h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Bugün sistemde olanlar bir bakışta.
+            {todayLabel()} — günün özeti.
           </p>
         </div>
         <span className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          {todayLabel()}
+          <span className={`h-1.5 w-1.5 rounded-full ${status.color}`} />
+          {status.label}
         </span>
       </div>
 
+      {/* PDKS quick action banner */}
+      <Link
+        to="/employee/pdks"
+        className="group flex items-center justify-between gap-4 overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 p-5 shadow-lg shadow-orange-500/20 transition-shadow hover:shadow-xl hover:shadow-orange-500/30"
+      >
+        <div className="flex items-center gap-4">
+          <span className="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30">
+            <SmartphoneNfc className="h-6 w-6 text-white" strokeWidth={2.25} />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-white/80">Mobil PDKS</p>
+            <p className="text-lg font-bold text-white">Giriş / Çıkış Yap</p>
+          </div>
+        </div>
+        <ArrowUpRight className="h-5 w-5 text-white/70 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+      </Link>
+
+      {/* KPIs */}
       <motion.div
         variants={staggerContainer}
         initial="hidden"
         animate="show"
         className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
       >
-        {KPIS.map(({ label, value, delta, deltaPositive, tint, icon: Icon }) => (
+        {KPIS.map(({ label, value, sub, tint, icon: Icon }) => (
           <motion.div
             key={label}
             variants={cardReveal}
@@ -171,19 +189,12 @@ export default function Dashboard() {
             <p className="mt-4 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
               {value}
             </p>
-            <p
-              className={
-                deltaPositive
-                  ? "mt-1 text-xs font-medium text-emerald-600 dark:text-emerald-400"
-                  : "mt-1 text-xs font-medium text-rose-600 dark:text-rose-400"
-              }
-            >
-              {delta}
-            </p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{sub}</p>
           </motion.div>
         ))}
       </motion.div>
 
+      {/* Activity + chart */}
       <div className="grid gap-6 lg:grid-cols-3">
         <motion.section
           initial={{ opacity: 0, y: 14 }}
@@ -194,22 +205,22 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-white">
-                Son Aktiviteler
+                Son Hareketlerim
               </h2>
               <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                Sistem genelinde son hareketler
+                Kişisel aktivite geçmişi
               </p>
             </div>
             <a
               href="#"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
             >
               Tümünü gör
               <ArrowUpRight className="h-3.5 w-3.5" />
             </a>
           </div>
           <ul className="mt-5 divide-y divide-slate-200/70 dark:divide-white/10">
-            {ACTIVITY.map(({ who, action, when, tint, icon: Icon }, i) => (
+            {ACTIVITY.map(({ label, detail, when, tint, icon: Icon }, i) => (
               <li
                 key={i}
                 className="flex items-start gap-3 py-3.5 first:pt-0 last:pb-0"
@@ -220,16 +231,14 @@ export default function Dashboard() {
                   <Icon className="h-4 w-4" strokeWidth={2.25} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-slate-700 dark:text-slate-200">
-                    <span className="font-semibold text-slate-900 dark:text-white">
-                      {who}
-                    </span>{" "}
-                    {action}
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                    {label}
                   </p>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                    {when}
-                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{detail}</p>
                 </div>
+                <span className="whitespace-nowrap text-xs text-slate-400 dark:text-slate-500">
+                  {when}
+                </span>
               </li>
             ))}
           </ul>
@@ -242,33 +251,34 @@ export default function Dashboard() {
           className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-white/10 dark:bg-slate-900/60"
         >
           <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-white">
-            Haftalık Giriş Trendi
+            Haftalık Çalışma
           </h2>
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-            Son 7 gün
-          </p>
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Son 7 gün (saat)</p>
           <div className="mt-4 flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-cyan-500" />
-              Giriş
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+              Mesai
             </span>
             <span className="flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
-              Çıkış
+              <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+              Hedef
             </span>
           </div>
-          <MiniChart className="mt-3 h-36 w-full text-slate-400" />
+          <MiniChart
+            className="mt-3 h-36 w-full text-slate-400"
+            colorA="#f59e0b"
+            colorB="#f43f5e"
+            gradientId="empChart"
+          />
           <div className="mt-5 flex items-center justify-between border-t border-slate-200/60 pt-4 dark:border-white/10">
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Bu hafta
-              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Bu hafta</p>
               <p className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
-                7.842 giriş
+                38 sa 20 dk
               </p>
             </div>
-            <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-              +5,6%
+            <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+              %95,8
             </span>
           </div>
         </motion.section>

@@ -44,7 +44,7 @@ const PORTALS: Portal[] = [
     features: ["Detaylı Raporlar", "Ekip Yönetimi", "Faturalama & Sözleşme"],
     gradient: "from-cyan-500 via-sky-500 to-teal-500",
     ring: "group-hover:shadow-[0_0_60px_-10px_rgba(6,182,212,0.45)]",
-    href: "#client",
+    href: "/client/login",
   },
   {
     icon: UserCircle2,
@@ -60,7 +60,7 @@ const PORTALS: Portal[] = [
     ],
     gradient: "from-amber-500 via-orange-500 to-rose-500",
     ring: "group-hover:shadow-[0_0_60px_-10px_rgba(251,146,60,0.45)]",
-    href: "#employee",
+    href: "/employee/login",
     badge: "Mobil",
   },
 ];

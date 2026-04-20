@@ -1,12 +1,15 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import type { UserRole } from "@/lib/supabase";
+import type { PortalConfig } from "@/lib/portals";
 
-export default function RequireAdmin({
-  children,
-}: {
+type Props = {
+  portal: PortalConfig;
   children: React.ReactNode;
-}) {
+};
+
+export default function RequireRole({ portal, children }: Props) {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
 
@@ -21,14 +24,17 @@ export default function RequireAdmin({
   if (!user) {
     return (
       <Navigate
-        to="/admin/login"
+        to={portal.loginPath}
         state={{ from: location.pathname }}
         replace
       />
     );
   }
 
-  if (profile?.role !== "admin") {
+  const allowed: UserRole[] =
+    portal.role === "admin" ? ["admin"] : [portal.role];
+
+  if (!profile || !allowed.includes(profile.role)) {
     return <Navigate to="/" replace />;
   }
 

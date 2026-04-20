@@ -11,7 +11,6 @@ import {
   KeyRound,
   Loader2,
   Moon,
-  ShieldCheck,
   Sun,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -21,6 +20,7 @@ import { fadeUp, staggerContainer } from "@/components/motion/variants";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { supabase } from "@/lib/supabase";
+import type { PortalConfig } from "@/lib/portals";
 
 const loginSchema = z.object({
   email: z.string().min(1, "E-posta gerekli").email("Geçerli bir e-posta girin"),
@@ -30,7 +30,7 @@ const loginSchema = z.object({
 
 type LoginValues = z.infer<typeof loginSchema>;
 
-export default function AdminLogin() {
+export default function PortalLogin({ portal }: { portal: PortalConfig }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile, loading } = useAuth();
@@ -48,13 +48,14 @@ export default function AdminLogin() {
   });
 
   useEffect(() => {
-    if (!loading && user && profile?.role === "admin") {
+    if (!loading && user && profile?.role === portal.role) {
       const from = (location.state as { from?: string } | null)?.from;
-      navigate(from && from.startsWith("/admin") ? from : "/admin", {
-        replace: true,
-      });
+      navigate(
+        from && from.startsWith(portal.basePath) ? from : portal.basePath,
+        { replace: true },
+      );
     }
-  }, [loading, user, profile, navigate, location.state]);
+  }, [loading, user, profile, navigate, location.state, portal]);
 
   const onSubmit = async (values: LoginValues) => {
     setFormError(null);
@@ -78,13 +79,25 @@ export default function AdminLogin() {
       .eq("id", uid)
       .maybeSingle();
 
-    if (!profileRow || profileRow.role !== "admin") {
+    if (!profileRow || profileRow.role !== portal.role) {
       await supabase.auth.signOut();
-      setFormError("Bu hesabın admin yetkisi yok.");
+      setFormError(portal.login.mismatchError);
       return;
     }
-    navigate("/admin", { replace: true });
+    navigate(portal.basePath, { replace: true });
   };
+
+  const {
+    eyebrow,
+    eyebrowIcon: EyebrowIcon,
+    title,
+    subtitle,
+    decorativeIcon: DecorativeIcon,
+    decorativeIconGradient,
+    decorativeTitle,
+    decorativeDescription,
+    decorativeBullets,
+  } = portal.login;
 
   return (
     <div className="relative grid min-h-screen lg:grid-cols-2">
@@ -131,9 +144,11 @@ export default function AdminLogin() {
           className="w-full max-w-md"
         >
           <motion.div variants={fadeUp}>
-            <span className="inline-flex items-center gap-2 rounded-full border border-indigo-200/80 bg-indigo-50/70 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:border-indigo-400/20 dark:bg-indigo-500/10 dark:text-indigo-300">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Admin Paneli
+            <span
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${portal.accentBadge} border-current/20`}
+            >
+              <EyebrowIcon className="h-3.5 w-3.5" />
+              {eyebrow}
             </span>
           </motion.div>
 
@@ -141,13 +156,13 @@ export default function AdminLogin() {
             variants={fadeUp}
             className="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white"
           >
-            Tekrar hoş geldin
+            {title}
           </motion.h1>
           <motion.p
             variants={fadeUp}
             className="mt-2 text-sm text-slate-600 dark:text-slate-400"
           >
-            Yönetim paneline erişmek için admin hesabınla giriş yap.
+            {subtitle}
           </motion.p>
 
           <motion.form
@@ -176,7 +191,7 @@ export default function AdminLogin() {
                 <Label htmlFor="password">Şifre</Label>
                 <a
                   href="#"
-                  className="text-xs font-medium text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300"
+                  className={`text-xs font-medium ${portal.accentText} hover:opacity-80`}
                 >
                   Şifremi unuttum
                 </a>
@@ -205,9 +220,7 @@ export default function AdminLogin() {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-xs text-rose-500">
-                  {errors.password.message}
-                </p>
+                <p className="text-xs text-rose-500">{errors.password.message}</p>
               )}
             </div>
 
@@ -260,30 +273,29 @@ export default function AdminLogin() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="glass rounded-3xl p-10 text-center shadow-2xl shadow-indigo-500/10"
+            className="glass rounded-3xl p-10 text-center shadow-2xl shadow-slate-900/10"
           >
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-500 shadow-lg shadow-purple-500/30 ring-1 ring-white/20">
-              <ShieldCheck className="h-8 w-8 text-white" strokeWidth={2.25} />
+            <div
+              className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${decorativeIconGradient} shadow-lg ring-1 ring-white/20`}
+            >
+              <DecorativeIcon className="h-8 w-8 text-white" strokeWidth={2.25} />
             </div>
             <h2 className="mt-6 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Kurumsal kontrol merkezi
+              {decorativeTitle}
             </h2>
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-              Kullanıcılar, roller, denetim kayıtları ve sistem ayarları tek bir
-              güvenli panelden.
+              {decorativeDescription}
             </p>
 
             <ul className="mt-8 space-y-3 text-left text-sm">
-              {[
-                "Rol bazlı yetki & SSO",
-                "Gerçek zamanlı denetim kayıtları",
-                "Tüm modüller üzerinde tam kontrol",
-              ].map((f) => (
+              {decorativeBullets.map((f) => (
                 <li
                   key={f}
                   className="flex items-center gap-2.5 text-slate-700 dark:text-slate-300"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-cyan-500 to-indigo-500" />
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full bg-gradient-to-br ${decorativeIconGradient}`}
+                  />
                   {f}
                 </li>
               ))}

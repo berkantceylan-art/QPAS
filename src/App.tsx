@@ -6,7 +6,6 @@ import {
   Settings,
   ShieldCheck,
   UserCircle2,
-  Users,
   UsersRound,
   Wallet,
 } from "lucide-react";
@@ -23,6 +22,7 @@ import { PORTALS } from "./lib/portals";
 
 // Dashboards
 import AdminDashboard from "./pages/admin/Dashboard";
+import AdminUsers from "./pages/admin/Users";
 import ClientDashboard from "./pages/client/Dashboard";
 import EmployeeDashboard from "./pages/employee/Dashboard";
 import EmployeePdks from "./pages/employee/Pdks";
@@ -47,17 +47,7 @@ export default function App() {
         }
       >
         <Route index element={<AdminDashboard />} />
-        <Route
-          path="users"
-          element={
-            <Placeholder
-              portal={admin}
-              title="Kullanıcılar"
-              description="Sistemdeki tüm kullanıcıları yönetin, rol atayın ve erişimi kontrol edin."
-              icon={Users}
-            />
-          }
-        />
+        <Route path="users" element={<AdminUsers />} />
         <Route
           path="roles"
           element={

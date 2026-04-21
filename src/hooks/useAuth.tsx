@@ -56,18 +56,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(async ({ data }) => {
+    supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
-      await applySession(data.session);
-      if (mounted) setLoading(false);
+      void applySession(data.session).finally(() => {
+        if (mounted) setLoading(false);
+      });
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+    // Deadlock avoidance: never await other supabase calls directly inside
+    // onAuthStateChange. The internal auth lock is held while the callback
+    // runs, so awaiting `.from(...)` here deadlocks the client. Defer with
+    // setTimeout so the work runs after the lock is released.
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setTimeout(() => {
         if (!mounted) return;
-        await applySession(session);
-      },
-    );
+        void applySession(session);
+      }, 0);
+    });
 
     return () => {
       mounted = false;

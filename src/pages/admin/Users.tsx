@@ -352,10 +352,23 @@ function CreateUserDialog({
       { body: payload },
     );
     if (error) {
-      const msg =
-        (error as { context?: { error?: string } }).context?.error ??
-        error.message ??
-        "Kullanıcı oluşturulamadı";
+      let msg = error.message || "Kullanıcı oluşturulamadı";
+      const ctx = (error as { context?: Response }).context;
+      if (ctx && typeof ctx.json === "function") {
+        try {
+          const parsed = (await ctx.json()) as {
+            error?: string;
+            detail?: string;
+          };
+          msg = parsed.error
+            ? parsed.detail
+              ? `${parsed.error} — ${parsed.detail}`
+              : parsed.error
+            : msg;
+        } catch {
+          // body wasn't JSON — keep default msg
+        }
+      }
       setApiError(msg);
       return;
     }

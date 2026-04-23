@@ -32,6 +32,7 @@ import {
   type Shift,
 } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import EmployeeAccountSection from "./employees/EmployeeAccountSection";
 
 const optionalString = z
   .string()
@@ -281,7 +282,7 @@ function PersonnelCardForm({
     setTab("general");
     setApiError(null);
     setSavedFlash(false);
-  }, [employee, reset]);
+  }, [employee?.id, reset]);
 
   const isEdit = employee !== null;
   const linkedManagers = otherEmployees.filter(
@@ -590,13 +591,17 @@ function PersonnelCardForm({
                 ))}
               </Select>
             </Field>
-            <div className="col-span-full rounded-lg border border-dashed border-slate-200 bg-slate-50/60 px-4 py-3 text-xs text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
-              <strong className="text-slate-700 dark:text-slate-200">
-                Sistem Girişi:
-              </strong>{" "}
-              Bu çalışana login bağlamak için Faz 2'de "Hesap Oluştur" butonu
-              gelecek. Şu an çalışan kaydı login'siz tutulabilir.
-            </div>
+            {isEdit && employee ? (
+              <EmployeeAccountSection employee={employee} />
+            ) : (
+              <div className="col-span-full rounded-lg border border-dashed border-slate-200 bg-slate-50/60 px-4 py-3 text-xs text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
+                <strong className="text-slate-700 dark:text-slate-200">
+                  Sistem Girişi:
+                </strong>{" "}
+                Önce çalışanı kaydedin, ardından bu sekmeden hesap
+                oluşturabilirsiniz.
+              </div>
+            )}
             <Field label="Notlar" span={2}>
               <Textarea
                 rows={3}

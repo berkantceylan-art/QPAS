@@ -78,6 +78,26 @@ export type Gender = "male" | "female" | "other";
 export type ContractType = "full_time" | "part_time" | "contractor" | "intern";
 export type SgkType = "standard" | "retiree" | "disabled";
 
+export type DocType =
+  | "identity"
+  | "health_report"
+  | "contract"
+  | "criminal_record"
+  | "other";
+
+export type EmployeeDocument = {
+  id: string;
+  employee_id: string;
+  company_id: string;
+  doc_type: DocType;
+  file_path: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  uploaded_by: string | null;
+  created_at: string;
+};
+
 export type Employee = {
   id: string;
   company_id: string;

@@ -33,6 +33,7 @@ import {
 } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import EmployeeAccountSection from "./employees/EmployeeAccountSection";
+import DocumentsPanel from "./employees/DocumentsPanel";
 
 const optionalString = z
   .string()
@@ -613,35 +614,13 @@ function PersonnelCardForm({
         </TabsContent>
 
         <TabsContent value="documents">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {[
-              { label: "Kimlik Fotokopisi", desc: "TC kimlik / pasaport" },
-              { label: "Sağlık Raporu", desc: "İşe giriş muayenesi" },
-              { label: "İş Sözleşmesi", desc: "İmzalı kopya" },
-              { label: "Adli Sicil Kaydı", desc: "Son 6 ay" },
-            ].map((doc) => (
-              <div
-                key={doc.label}
-                className="flex items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-white/60 p-4 dark:border-white/10 dark:bg-white/5"
-              >
-                <FileText className="h-8 w-8 flex-none text-slate-400" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">
-                    {doc.label}
-                  </p>
-                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                    {doc.desc}
-                  </p>
-                </div>
-                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-white/10 dark:text-slate-400">
-                  Faz 2
-                </span>
-              </div>
-            ))}
-            <p className="col-span-full text-xs text-slate-500 dark:text-slate-400">
-              Belge yükleme Faz 2'de Supabase Storage entegrasyonu ile gelecek.
-            </p>
-          </div>
+          {isEdit && employee ? (
+            <DocumentsPanel employee={employee} />
+          ) : (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-white/60 p-6 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
+              Belge yüklemek için önce çalışanı kaydedin.
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 

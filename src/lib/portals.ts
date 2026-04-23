@@ -8,6 +8,7 @@ import {
   FileText,
   HandCoins,
   LayoutDashboard,
+  Network,
   Receipt,
   Settings,
   ShieldCheck,
@@ -109,6 +110,7 @@ export const PORTALS: Record<PortalConfig["id"], PortalConfig> = {
     nav: [
       { to: "/client", label: "Genel Bakış", icon: LayoutDashboard, end: true },
       { to: "/client/employees", label: "Çalışanlar", icon: UsersRound },
+      { to: "/client/organization", label: "Organizasyon", icon: Network },
       { to: "/client/reports", label: "Raporlar", icon: FileBarChart2 },
       { to: "/client/billing", label: "Faturalama", icon: Receipt },
       { to: "/client/settings", label: "Ayarlar", icon: Settings },

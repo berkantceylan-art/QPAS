@@ -25,6 +25,7 @@ import AdminUsers from "./pages/admin/Users";
 import AdminCompanies from "./pages/admin/Companies";
 import ClientDashboard from "./pages/client/Dashboard";
 import ClientEmployees from "./pages/client/Employees";
+import ClientOrganization from "./pages/client/Organization";
 import EmployeeDashboard from "./pages/employee/Dashboard";
 import EmployeePdks from "./pages/employee/Pdks";
 
@@ -97,6 +98,7 @@ export default function App() {
       >
         <Route index element={<ClientDashboard />} />
         <Route path="employees" element={<ClientEmployees />} />
+        <Route path="organization" element={<ClientOrganization />} />
         <Route
           path="reports"
           element={

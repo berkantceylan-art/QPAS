@@ -23,6 +23,7 @@ import { PORTALS } from "./lib/portals";
 // Dashboards
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
+import AdminCompanies from "./pages/admin/Companies";
 import ClientDashboard from "./pages/client/Dashboard";
 import EmployeeDashboard from "./pages/employee/Dashboard";
 import EmployeePdks from "./pages/employee/Pdks";
@@ -48,6 +49,7 @@ export default function App() {
       >
         <Route index element={<AdminDashboard />} />
         <Route path="users" element={<AdminUsers />} />
+        <Route path="companies" element={<AdminCompanies />} />
         <Route
           path="roles"
           element={

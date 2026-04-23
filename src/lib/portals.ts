@@ -71,6 +71,7 @@ export const PORTALS: Record<PortalConfig["id"], PortalConfig> = {
     nav: [
       { to: "/admin", label: "Genel Bakış", icon: LayoutDashboard, end: true },
       { to: "/admin/users", label: "Kullanıcılar", icon: Users },
+      { to: "/admin/companies", label: "Firmalar", icon: Building2 },
       { to: "/admin/roles", label: "Roller", icon: ShieldCheck },
       { to: "/admin/audit", label: "Denetim Kayıtları", icon: FileBarChart2 },
       { to: "/admin/settings", label: "Ayarlar", icon: Settings },

@@ -21,7 +21,7 @@ import { Select } from "@/components/ui/Select";
 import { Dialog } from "@/components/ui/Dialog";
 import { cardReveal, staggerContainer } from "@/components/motion/variants";
 import { PORTALS } from "@/lib/portals";
-import { supabase, type Profile, type UserRole } from "@/lib/supabase";
+import { supabase, type Company, type Profile, type UserRole } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 const ROLE_LABEL: Record<UserRole, string> = {
@@ -49,6 +49,7 @@ const createSchema = z
     role: z.enum(["client", "employee"], {
       errorMap: () => ({ message: "Rol seçin" }),
     }),
+    company_id: z.string().uuid("Firma seçin"),
     passwordMode: z.enum(["auto", "manual"]),
     password: z.string().optional(),
   })
@@ -68,6 +69,7 @@ type CreateResponse = {
   email: string;
   full_name: string | null;
   role: UserRole;
+  company_id: string | null;
   initial_password?: string | null;
 };
 
@@ -106,7 +108,7 @@ export default function Users() {
     setLoadError(null);
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select("*, company:companies(id,name,slug)")
       .order("created_at", { ascending: false });
     if (error) {
       setLoadError(error.message);
@@ -132,6 +134,7 @@ export default function Users() {
         email: created.email,
         full_name: created.full_name,
         role: created.role,
+        company_id: created.company_id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
@@ -270,6 +273,11 @@ export default function Users() {
                     {row.email}
                   </p>
                 </div>
+                {(row as any).company && (
+                  <span className="hidden lg:inline text-xs text-slate-500 dark:text-slate-400">
+                    {(row as any).company.name}
+                  </span>
+                )}
                 <span
                   className={cn(
                     "hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider",
@@ -308,6 +316,8 @@ function CreateUserDialog({
   const [apiError, setApiError] = useState<string | null>(null);
   const [result, setResult] = useState<CreateResponse | null>(null);
   const [copied, setCopied] = useState(false);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companiesLoading, setCompaniesLoading] = useState(true);
 
   const {
     register,
@@ -321,12 +331,27 @@ function CreateUserDialog({
       email: "",
       full_name: "",
       role: "client",
+      company_id: "",
       passwordMode: "auto",
       password: "",
     },
   });
 
   const passwordMode = watch("passwordMode");
+
+  useEffect(() => {
+    if (open && companies.length === 0) {
+      setCompaniesLoading(true);
+      supabase
+        .from("companies")
+        .select("*")
+        .order("name")
+        .then(({ data }) => {
+          setCompanies(data ?? []);
+          setCompaniesLoading(false);
+        });
+    }
+  }, [open, companies.length]);
 
   useEffect(() => {
     if (!open) {
@@ -343,6 +368,7 @@ function CreateUserDialog({
       email: values.email,
       full_name: values.full_name,
       role: values.role,
+      company_id: values.company_id,
       ...(values.passwordMode === "manual" && values.password
         ? { password: values.password }
         : {}),
@@ -496,6 +522,28 @@ function CreateUserDialog({
             </Select>
             {errors.role && (
               <p className="text-xs text-rose-500">{errors.role.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="company_id">Firma</Label>
+            <Select
+              id="company_id"
+              invalid={!!errors.company_id}
+              disabled={companiesLoading}
+              {...register("company_id")}
+            >
+              <option value="">Firma seçin…</option>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+            {errors.company_id && (
+              <p className="text-xs text-rose-500">
+                {errors.company_id.message}
+              </p>
             )}
           </div>
 

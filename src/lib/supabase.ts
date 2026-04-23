@@ -19,11 +19,21 @@ export const supabase = createClient(url, key, {
 
 export type UserRole = "admin" | "client" | "employee";
 
+export type Company = {
+  id: string;
+  name: string;
+  slug: string;
+  status: "active" | "suspended";
+  created_at: string;
+  updated_at: string;
+};
+
 export type Profile = {
   id: string;
   email: string;
   full_name: string | null;
   role: UserRole;
+  company_id: string | null;
   created_at: string;
   updated_at: string;
 };

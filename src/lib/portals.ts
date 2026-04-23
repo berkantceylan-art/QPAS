@@ -108,8 +108,8 @@ export const PORTALS: Record<PortalConfig["id"], PortalConfig> = {
     dashboardEyebrow: "İşletme Özeti",
     nav: [
       { to: "/client", label: "Genel Bakış", icon: LayoutDashboard, end: true },
+      { to: "/client/employees", label: "Çalışanlar", icon: UsersRound },
       { to: "/client/reports", label: "Raporlar", icon: FileBarChart2 },
-      { to: "/client/team", label: "Ekip", icon: UsersRound },
       { to: "/client/billing", label: "Faturalama", icon: Receipt },
       { to: "/client/settings", label: "Ayarlar", icon: Settings },
     ],

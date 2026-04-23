@@ -6,7 +6,6 @@ import {
   Settings,
   ShieldCheck,
   UserCircle2,
-  UsersRound,
   Wallet,
 } from "lucide-react";
 
@@ -25,6 +24,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
 import AdminCompanies from "./pages/admin/Companies";
 import ClientDashboard from "./pages/client/Dashboard";
+import ClientEmployees from "./pages/client/Employees";
 import EmployeeDashboard from "./pages/employee/Dashboard";
 import EmployeePdks from "./pages/employee/Pdks";
 
@@ -96,6 +96,7 @@ export default function App() {
         }
       >
         <Route index element={<ClientDashboard />} />
+        <Route path="employees" element={<ClientEmployees />} />
         <Route
           path="reports"
           element={
@@ -104,17 +105,6 @@ export default function App() {
               title="Raporlar"
               description="Detaylı finans, personel ve operasyon raporlarınız."
               icon={FileBarChart2}
-            />
-          }
-        />
-        <Route
-          path="team"
-          element={
-            <Placeholder
-              portal={client}
-              title="Ekip"
-              description="Ekibinizi yönetin, rol atayın ve aktiviteleri izleyin."
-              icon={UsersRound}
             />
           }
         />

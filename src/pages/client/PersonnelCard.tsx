@@ -110,11 +110,26 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 const TAB_ITEMS = [
-  { value: "general", label: "Genel", icon: UserCircle2 },
-  { value: "employment", label: "İstihdam", icon: Briefcase },
-  { value: "financial", label: "Mali & SGK", icon: CreditCard },
-  { value: "pdks", label: "PDKS & Teknik", icon: SmartphoneNfc },
-  { value: "documents", label: "Belgeler", icon: FileText },
+  { value: "general", label: "Genel", shortLabel: "Genel", icon: UserCircle2 },
+  { value: "employment", label: "İstihdam", shortLabel: "İş", icon: Briefcase },
+  {
+    value: "financial",
+    label: "Mali & SGK",
+    shortLabel: "Mali",
+    icon: CreditCard,
+  },
+  {
+    value: "pdks",
+    label: "PDKS & Teknik",
+    shortLabel: "PDKS",
+    icon: SmartphoneNfc,
+  },
+  {
+    value: "documents",
+    label: "Belgeler",
+    shortLabel: "Belge",
+    icon: FileText,
+  },
 ] as const;
 
 function useIsMobile(breakpoint = 768) {
@@ -337,11 +352,12 @@ function PersonnelCardForm({
         orientation={isMobile ? "horizontal" : "vertical"}
       >
         <TabsList ariaLabel="Personel kartı sekmeleri">
-          {TAB_ITEMS.map(({ value, label, icon: Icon }) => (
+          {TAB_ITEMS.map(({ value, label, shortLabel, icon: Icon }) => (
             <TabsTrigger
               key={value}
               value={value}
-              icon={<Icon className="h-4 w-4" />}
+              shortLabel={shortLabel}
+              icon={<Icon className="h-full w-full" />}
             >
               {label}
             </TabsTrigger>

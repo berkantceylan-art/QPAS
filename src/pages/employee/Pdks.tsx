@@ -8,8 +8,11 @@ import {
   LogIn,
   LogOut,
   MapPin,
+  Moon,
   QrCode,
   ScanLine,
+  Sun,
+  TrendingUp,
   X,
   XCircle,
 } from "lucide-react";
@@ -21,6 +24,7 @@ import {
   type AttendanceLogType,
   type AttendanceMethod,
   type Employee,
+  type PeriodHours,
 } from "@/lib/supabase";
 import { cardReveal, staggerContainer } from "@/components/motion/variants";
 import { cn } from "@/lib/utils";
@@ -66,10 +70,23 @@ function formatDuration(minutes: number | null) {
   return `${h}s ${m}d`;
 }
 
+function getWeekRange(): { from: Date; to: Date } {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const from = new Date(now);
+  from.setDate(now.getDate() + diffToMonday);
+  from.setHours(0, 0, 0, 0);
+  const to = new Date(from);
+  to.setDate(from.getDate() + 7);
+  return { from, to };
+}
+
 export default function EmployeePdks() {
   const { user } = useAuth();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
+  const [weekSummary, setWeekSummary] = useState<PeriodHours | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +113,18 @@ export default function EmployeePdks() {
         .gte("logged_at", since.toISOString())
         .order("logged_at", { ascending: false });
       setLogs((logRows as AttendanceLog[]) ?? []);
+
+      const week = getWeekRange();
+      const { data: summary } = await supabase.rpc("calculate_period_hours", {
+        p_employee_id: emp.id,
+        p_from: week.from.toISOString(),
+        p_to: week.to.toISOString(),
+      });
+      if (summary && summary.length > 0) {
+        setWeekSummary(summary[0] as PeriodHours);
+      } else {
+        setWeekSummary(null);
+      }
     }
     setLoading(false);
   }, [user?.id]);
@@ -335,6 +364,69 @@ export default function EmployeePdks() {
         </div>
       </motion.div>
 
+      {weekSummary && weekSummary.total_minutes > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm dark:border-white/10 dark:bg-slate-900/60"
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                Bu Hafta
+              </p>
+              <p className="mt-0.5 text-lg font-bold text-slate-900 dark:text-white">
+                {formatDuration(weekSummary.effective_minutes)}{" "}
+                <span className="text-sm font-normal text-slate-500">
+                  efektif
+                </span>
+              </p>
+            </div>
+            <span
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-xl",
+                weekSummary.overtime_minutes > 0
+                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                  : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+              )}
+            >
+              <TrendingUp className="h-5 w-5" />
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <SummaryStat
+              label="Toplam"
+              value={formatDuration(weekSummary.total_minutes)}
+              icon={<Clock className="h-3.5 w-3.5" />}
+              tone="slate"
+            />
+            <SummaryStat
+              label="Gündüz"
+              value={formatDuration(weekSummary.day_minutes)}
+              icon={<Sun className="h-3.5 w-3.5" />}
+              tone="sky"
+            />
+            <SummaryStat
+              label="Gece ×1.5"
+              value={formatDuration(weekSummary.night_minutes)}
+              icon={<Moon className="h-3.5 w-3.5" />}
+              tone="indigo"
+            />
+            <SummaryStat
+              label="Mesai"
+              value={formatDuration(weekSummary.overtime_minutes)}
+              icon={<TrendingUp className="h-3.5 w-3.5" />}
+              tone={weekSummary.overtime_minutes > 0 ? "amber" : "slate"}
+            />
+          </div>
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            Gece 22:00-06:00 saatleri ×1.5 katsayıyla, haftalık 45 saat üstü
+            mesai sayılır.
+          </p>
+        </motion.div>
+      )}
+
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
           Bugünkü Kayıtlar
@@ -409,6 +501,41 @@ export default function EmployeePdks() {
           onScanned={handleQrScanned}
         />
       )}
+    </div>
+  );
+}
+
+function SummaryStat({
+  label,
+  value,
+  icon,
+  tone,
+}: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  tone: "slate" | "sky" | "indigo" | "amber";
+}) {
+  const toneClasses = {
+    slate: "bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300",
+    sky: "bg-sky-500/10 text-sky-700 dark:text-sky-300",
+    indigo: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300",
+    amber: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  };
+  return (
+    <div className="rounded-lg border border-slate-200/70 bg-white/60 px-3 py-2 dark:border-white/10 dark:bg-white/5">
+      <p
+        className={cn(
+          "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+          toneClasses[tone],
+        )}
+      >
+        {icon}
+        {label}
+      </p>
+      <p className="mt-1 font-mono text-sm font-semibold text-slate-900 dark:text-white">
+        {value}
+      </p>
     </div>
   );
 }

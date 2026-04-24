@@ -72,8 +72,20 @@ export type Shift = {
   name: string;
   start_time: string | null;
   end_time: string | null;
+  is_flexible: boolean;
+  min_daily_hours: number | null;
+  max_daily_hours: number | null;
   created_at: string;
   updated_at: string;
+};
+
+export type PeriodHours = {
+  total_minutes: number;
+  day_minutes: number;
+  night_minutes: number;
+  effective_minutes: number;
+  overtime_minutes: number;
+  pair_count: number;
 };
 
 export type EmployeeStatus = "active" | "passive" | "resigned" | "candidate";

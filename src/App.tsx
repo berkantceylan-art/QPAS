@@ -1,7 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import {
   FileBarChart2,
-  HandCoins,
   Receipt,
   Settings,
   ShieldCheck,
@@ -23,12 +22,15 @@ import { PORTALS } from "./lib/portals";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
 import AdminCompanies from "./pages/admin/Companies";
+import AdminFinance from "./pages/admin/Finance";
 import ClientDashboard from "./pages/client/Dashboard";
 import ClientEmployees from "./pages/client/Employees";
 import ClientAttendance from "./pages/client/Attendance";
+import ClientFinance from "./pages/client/Finance";
 import ClientOrganization from "./pages/client/Organization";
 import EmployeeDashboard from "./pages/employee/Dashboard";
 import EmployeePdks from "./pages/employee/Pdks";
+import EmployeeRequests from "./pages/employee/Requests";
 
 const admin = PORTALS.admin;
 const client = PORTALS.client;
@@ -52,6 +54,7 @@ export default function App() {
         <Route index element={<AdminDashboard />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="companies" element={<AdminCompanies />} />
+        <Route path="finance" element={<AdminFinance />} />
         <Route
           path="roles"
           element={
@@ -100,6 +103,7 @@ export default function App() {
         <Route index element={<ClientDashboard />} />
         <Route path="employees" element={<ClientEmployees />} />
         <Route path="attendance" element={<ClientAttendance />} />
+        <Route path="finance" element={<ClientFinance />} />
         <Route path="organization" element={<ClientOrganization />} />
         <Route
           path="reports"
@@ -162,17 +166,7 @@ export default function App() {
             />
           }
         />
-        <Route
-          path="requests"
-          element={
-            <Placeholder
-              portal={employee}
-              title="Talepler"
-              description="İzin, avans ve BES taleplerinizi takip edin."
-              icon={HandCoins}
-            />
-          }
-        />
+        <Route path="requests" element={<EmployeeRequests />} />
         <Route
           path="profile"
           element={

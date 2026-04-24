@@ -88,6 +88,55 @@ export type PeriodHours = {
   pair_count: number;
 };
 
+export type FinanceRequestType = "advance" | "loan";
+export type FinanceRequestStatus =
+  | "pending_manager"
+  | "pending_admin"
+  | "approved"
+  | "rejected"
+  | "cancelled";
+export type LedgerEntryType = "debit" | "credit";
+
+export type FinancialRequest = {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  requested_by: string;
+  request_type: FinanceRequestType;
+  amount: number;
+  installments: number;
+  monthly_deduction: number | null;
+  reason: string | null;
+  status: FinanceRequestStatus;
+  manager_decided_by: string | null;
+  manager_decided_at: string | null;
+  manager_note: string | null;
+  admin_decided_by: string | null;
+  admin_decided_at: string | null;
+  admin_note: string | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DebtLedgerEntry = {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  request_id: string | null;
+  entry_type: LedgerEntryType;
+  amount: number;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type EmployeeBalance = {
+  total_debit: number;
+  total_credit: number;
+  balance: number;
+};
+
 export type EmployeeStatus = "active" | "passive" | "resigned" | "candidate";
 export type Gender = "male" | "female" | "other";
 export type ContractType = "full_time" | "part_time" | "contractor" | "intern";

@@ -22,6 +22,7 @@ export default defineConfig({
           supabase: ["@supabase/supabase-js"],
           motion: ["framer-motion"],
           form: ["react-hook-form", "@hookform/resolvers", "zod"],
+          qr: ["qrcode.react", "html5-qrcode"],
         },
       },
     },

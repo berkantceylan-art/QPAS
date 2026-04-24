@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, Loader2, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  Loader2,
+  Locate,
+  MapPin,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -13,12 +21,46 @@ type Props = {
   onChange: (next: Branch[]) => void;
 };
 
+const DEFAULT_RADIUS = 100;
+
+function parseNumberOrNull(v: string): number | null {
+  const trimmed = v.trim();
+  if (!trimmed) return null;
+  const n = Number(trimmed);
+  return Number.isFinite(n) ? n : null;
+}
+
 export default function BranchesPanel({ companyId, data, onChange }: Props) {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [radius, setRadius] = useState(String(DEFAULT_RADIUS));
   const [creating, setCreating] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Branch | null>(null);
+
+  const useMyLocation = () => {
+    if (!navigator.geolocation) {
+      setError("Tarayıcı konum desteklemiyor");
+      return;
+    }
+    setLocating(true);
+    setError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false);
+        setLatitude(pos.coords.latitude.toFixed(7));
+        setLongitude(pos.coords.longitude.toFixed(7));
+      },
+      () => {
+        setLocating(false);
+        setError("Konum alınamadı");
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +69,13 @@ export default function BranchesPanel({ companyId, data, onChange }: Props) {
       setError("Ad en az 2 karakter");
       return;
     }
+    const lat = parseNumberOrNull(latitude);
+    const lng = parseNumberOrNull(longitude);
+    if ((lat == null) !== (lng == null)) {
+      setError("Enlem ve boylamı birlikte girin (veya ikisini de boş bırakın)");
+      return;
+    }
+    const radiusNum = parseNumberOrNull(radius);
     setCreating(true);
     setError(null);
     const { data: created, error: insertError } = await supabase
@@ -35,6 +84,9 @@ export default function BranchesPanel({ companyId, data, onChange }: Props) {
         company_id: companyId,
         name: trimmedName,
         address: address.trim() || null,
+        latitude: lat,
+        longitude: lng,
+        geofence_radius_m: radiusNum ?? DEFAULT_RADIUS,
       })
       .select()
       .single();
@@ -46,6 +98,9 @@ export default function BranchesPanel({ companyId, data, onChange }: Props) {
     onChange([...data, created].sort((a, b) => a.name.localeCompare(b.name)));
     setName("");
     setAddress("");
+    setLatitude("");
+    setLongitude("");
+    setRadius(String(DEFAULT_RADIUS));
   };
 
   const handleDelete = async (row: Branch) => {
@@ -66,36 +121,92 @@ export default function BranchesPanel({ companyId, data, onChange }: Props) {
     <div className="space-y-4">
       <form
         onSubmit={handleCreate}
-        className="grid gap-2 rounded-xl border border-slate-200/70 bg-white/60 p-3 dark:border-white/10 dark:bg-white/5 sm:grid-cols-[1fr_1.5fr_auto] sm:items-end"
+        className="space-y-3 rounded-xl border border-slate-200/70 bg-white/60 p-3 dark:border-white/10 dark:bg-white/5"
       >
-        <div className="space-y-1.5">
-          <Label htmlFor="new-branch-name">Şube Adı</Label>
-          <Input
-            id="new-branch-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="örn. İstanbul Merkez"
-            disabled={creating}
-          />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="new-branch-name">Şube Adı</Label>
+            <Input
+              id="new-branch-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="örn. İstanbul Merkez"
+              disabled={creating}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="new-branch-address">Adres (opsiyonel)</Label>
+            <Input
+              id="new-branch-address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Adres…"
+              disabled={creating}
+            />
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="new-branch-address">Adres (opsiyonel)</Label>
-          <Input
-            id="new-branch-address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="Adres…"
-            disabled={creating}
-          />
+
+        <div className="grid gap-3 sm:grid-cols-[1fr_1fr_120px]">
+          <div className="space-y-1.5">
+            <Label htmlFor="new-branch-lat">Enlem</Label>
+            <Input
+              id="new-branch-lat"
+              value={latitude}
+              onChange={(e) => setLatitude(e.target.value)}
+              placeholder="41.0082"
+              inputMode="decimal"
+              disabled={creating}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="new-branch-lng">Boylam</Label>
+            <Input
+              id="new-branch-lng"
+              value={longitude}
+              onChange={(e) => setLongitude(e.target.value)}
+              placeholder="28.9784"
+              inputMode="decimal"
+              disabled={creating}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="new-branch-radius">Yarıçap (m)</Label>
+            <Input
+              id="new-branch-radius"
+              value={radius}
+              onChange={(e) => setRadius(e.target.value)}
+              placeholder="100"
+              inputMode="numeric"
+              disabled={creating}
+            />
+          </div>
         </div>
-        <Button type="submit" disabled={creating} className="gap-1.5">
-          {creating ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Plus className="h-4 w-4" />
-          )}
-          Ekle
-        </Button>
+
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={useMyLocation}
+            disabled={locating || creating}
+            className="gap-1.5"
+          >
+            {locating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Locate className="h-4 w-4" />
+            )}
+            Konumumu kullan
+          </Button>
+          <Button type="submit" disabled={creating} className="gap-1.5">
+            {creating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            Ekle
+          </Button>
+        </div>
       </form>
 
       {error && (
@@ -117,9 +228,16 @@ export default function BranchesPanel({ companyId, data, onChange }: Props) {
               title={d.name}
               subtitle={d.address ?? undefined}
               meta={
-                d.address && (
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
+                d.latitude != null && d.longitude != null ? (
+                  <span className="inline-flex items-center gap-1.5 font-mono">
+                    <MapPin className="h-3 w-3 text-emerald-500" />
+                    {Number(d.latitude).toFixed(4)},{" "}
+                    {Number(d.longitude).toFixed(4)} ·{" "}
+                    {d.geofence_radius_m ?? DEFAULT_RADIUS}m
+                  </span>
+                ) : (
+                  <span className="text-amber-600 dark:text-amber-400">
+                    konumsuz
                   </span>
                 )
               }
@@ -175,16 +293,44 @@ function EditDialog({
 }) {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [radius, setRadius] = useState("");
   const [saving, setSaving] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (row) {
       setName(row.name);
       setAddress(row.address ?? "");
+      setLatitude(row.latitude != null ? String(row.latitude) : "");
+      setLongitude(row.longitude != null ? String(row.longitude) : "");
+      setRadius(String(row.geofence_radius_m ?? DEFAULT_RADIUS));
       setError(null);
     }
   }, [row]);
+
+  const useMyLocation = () => {
+    if (!navigator.geolocation) {
+      setError("Tarayıcı konum desteklemiyor");
+      return;
+    }
+    setLocating(true);
+    setError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false);
+        setLatitude(pos.coords.latitude.toFixed(7));
+        setLongitude(pos.coords.longitude.toFixed(7));
+      },
+      () => {
+        setLocating(false);
+        setError("Konum alınamadı");
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,11 +340,24 @@ function EditDialog({
       setError("Ad en az 2 karakter");
       return;
     }
+    const lat = parseNumberOrNull(latitude);
+    const lng = parseNumberOrNull(longitude);
+    if ((lat == null) !== (lng == null)) {
+      setError("Enlem ve boylamı birlikte girin");
+      return;
+    }
+    const radiusNum = parseNumberOrNull(radius);
     setSaving(true);
     setError(null);
     const { data, error: updateError } = await supabase
       .from("branches")
-      .update({ name: trimmedName, address: address.trim() || null })
+      .update({
+        name: trimmedName,
+        address: address.trim() || null,
+        latitude: lat,
+        longitude: lng,
+        geofence_radius_m: radiusNum ?? DEFAULT_RADIUS,
+      })
       .eq("id", row.id)
       .select()
       .single();
@@ -236,6 +395,53 @@ function EditDialog({
             disabled={saving}
           />
         </div>
+        <div className="grid gap-3 sm:grid-cols-[1fr_1fr_120px]">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-branch-lat">Enlem</Label>
+            <Input
+              id="edit-branch-lat"
+              value={latitude}
+              onChange={(e) => setLatitude(e.target.value)}
+              inputMode="decimal"
+              disabled={saving}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-branch-lng">Boylam</Label>
+            <Input
+              id="edit-branch-lng"
+              value={longitude}
+              onChange={(e) => setLongitude(e.target.value)}
+              inputMode="decimal"
+              disabled={saving}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-branch-radius">Yarıçap (m)</Label>
+            <Input
+              id="edit-branch-radius"
+              value={radius}
+              onChange={(e) => setRadius(e.target.value)}
+              inputMode="numeric"
+              disabled={saving}
+            />
+          </div>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={useMyLocation}
+          disabled={locating || saving}
+          className="gap-1.5"
+        >
+          {locating ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Locate className="h-4 w-4" />
+          )}
+          Konumumu kullan
+        </Button>
         {error && <p className="text-xs text-rose-500">{error}</p>}
         <div className="flex justify-end gap-2">
           <Button

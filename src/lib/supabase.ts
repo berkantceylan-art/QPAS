@@ -59,6 +59,9 @@ export type Branch = {
   company_id: string;
   name: string;
   address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  geofence_radius_m: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -77,6 +80,29 @@ export type EmployeeStatus = "active" | "passive" | "resigned" | "candidate";
 export type Gender = "male" | "female" | "other";
 export type ContractType = "full_time" | "part_time" | "contractor" | "intern";
 export type SgkType = "standard" | "retiree" | "disabled";
+
+export type AttendanceMethod = "gps" | "qr" | "device" | "manual";
+export type AttendanceLogType = "in" | "out";
+
+export type AttendanceLog = {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  branch_id: string | null;
+  method: AttendanceMethod;
+  log_type: AttendanceLogType;
+  latitude: number | null;
+  longitude: number | null;
+  accuracy_m: number | null;
+  distance_m: number | null;
+  qr_token_prefix: string | null;
+  device_id: string | null;
+  paired_log_id: string | null;
+  worked_minutes: number | null;
+  notes: string | null;
+  logged_at: string;
+  created_at: string;
+};
 
 export type DocType =
   | "identity"

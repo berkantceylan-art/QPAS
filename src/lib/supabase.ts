@@ -137,6 +137,55 @@ export type EmployeeBalance = {
   balance: number;
 };
 
+export type ChatThread = {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  last_message_at: string | null;
+  last_message_preview: string | null;
+  last_message_sender_id: string | null;
+  created_at: string;
+};
+
+export type ChatMessage = {
+  id: string;
+  thread_id: string;
+  company_id: string;
+  sender_id: string | null;
+  body: string;
+  created_at: string;
+};
+
+export type Announcement = {
+  id: string;
+  company_id: string;
+  title: string;
+  body: string;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type AnnouncementRead = {
+  announcement_id: string;
+  user_id: string;
+  read_at: string;
+};
+
+export type EmergencyKind = "call_hr" | "help" | "sos";
+
+export type EmergencyRequest = {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  user_id: string | null;
+  kind: EmergencyKind;
+  note: string | null;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  resolution_note: string | null;
+  created_at: string;
+};
+
 export type EmployeeStatus = "active" | "passive" | "resigned" | "candidate";
 export type Gender = "male" | "female" | "other";
 export type ContractType = "full_time" | "part_time" | "contractor" | "intern";

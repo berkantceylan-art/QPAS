@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { cardReveal, staggerContainer } from "@/components/motion/variants";
 import { PORTALS } from "@/lib/portals";
+import { useAuth } from "@/hooks/useAuth";
 import {
   supabase,
   type Department,
@@ -81,34 +82,54 @@ export default function Employees() {
 
   const [editing, setEditing] = useState<EmployeeRow | null>(null);
   const [creating, setCreating] = useState(false);
+  const { profile, loading: authLoading } = useAuth();
+  const companyMissing = !authLoading && profile && !profile.company_id;
 
   const fetchAll = async () => {
     setLoading(true);
     setLoadError(null);
-    const [emps, depts, titles, brs, shfts] = await Promise.all([
-      supabase
-        .from("employees")
-        .select(
-          "*, department:departments(id,name), job_title:job_titles(id,name), branch:branches(id,name)",
-        )
-        .order("created_at", { ascending: false }),
+    await Promise.all([fetchEmployees(), fetchSupportTables()]);
+    setLoading(false);
+  };
+
+  const fetchEmployees = async () => {
+    const { data, error } = await supabase
+      .from("employees")
+      .select(
+        "*, department:departments(id,name), job_title:job_titles(id,name), branch:branches(id,name)",
+      )
+      .order("created_at", { ascending: false });
+    if (error) {
+      setLoadError(error.message);
+      return;
+    }
+    setRows((data as EmployeeRow[]) ?? []);
+  };
+
+  const fetchSupportTables = async () => {
+    const [depts, titles, brs, shfts] = await Promise.all([
       supabase.from("departments").select("*").order("name"),
       supabase.from("job_titles").select("*").order("name"),
       supabase.from("branches").select("*").order("name"),
       supabase.from("shifts").select("*").order("name"),
     ]);
-    if (emps.error) setLoadError(emps.error.message);
-    setRows((emps.data as EmployeeRow[]) ?? []);
     setDepartments(depts.data ?? []);
     setJobTitles(titles.data ?? []);
     setBranches(brs.data ?? []);
     setShifts(shfts.data ?? []);
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchAll();
   }, []);
+
+  // Re-fetch support tables when personnel card opens so dropdowns reflect
+  // any departments/positions/branches/shifts created in another tab.
+  useEffect(() => {
+    if (creating || editing) {
+      fetchSupportTables();
+    }
+  }, [creating, editing]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -192,6 +213,7 @@ export default function Employees() {
           <Button
             size="sm"
             onClick={() => setCreating(true)}
+            disabled={!!companyMissing}
             className="gap-1.5"
           >
             <Plus className="h-4 w-4" />
@@ -261,6 +283,16 @@ export default function Employees() {
           )}
         </div>
       </div>
+
+      {companyMissing && (
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+          <AlertCircle className="mt-0.5 h-4 w-4 flex-none" />
+          <span>
+            Hesabınız bir firmaya bağlanmamış. Çalışan oluşturmak için sistem
+            yöneticisinden firma ataması talep edin.
+          </span>
+        </div>
+      )}
 
       {loadError && (
         <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">

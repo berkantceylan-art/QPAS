@@ -8,8 +8,10 @@ import {
   Building2,
   CheckCircle2,
   Loader2,
+  Pencil,
   Plus,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -49,6 +51,8 @@ export default function Companies() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Company | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fetchCompanies = async () => {
     setLoading(true);
@@ -71,6 +75,30 @@ export default function Companies() {
 
   const handleCreated = (created: Company) => {
     setRows((prev) => [created, ...prev]);
+  };
+
+  const handleSaved = (updated: Company) => {
+    setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    setEditing(null);
+  };
+
+  const handleDelete = async (row: Company) => {
+    if (
+      !confirm(
+        `"${row.name}" firmasını silmek üzeresin. Tüm bağlı çalışanlar, departmanlar ve ilgili kayıtlar SİLİNECEK. Devam edilsin mi?`,
+      )
+    )
+      return;
+    setActionError(null);
+    const { error } = await supabase
+      .from("companies")
+      .delete()
+      .eq("id", row.id);
+    if (error) {
+      setActionError(error.message);
+      return;
+    }
+    setRows((prev) => prev.filter((r) => r.id !== row.id));
   };
 
   return (
@@ -180,9 +208,34 @@ export default function Companies() {
               <span className="hidden md:inline text-xs text-slate-500 dark:text-slate-400">
                 {formatDate(row.created_at)}
               </span>
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setEditing(row)}
+                  aria-label="Düzenle"
+                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(row)}
+                  aria-label="Sil"
+                  className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:text-slate-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </motion.li>
           ))}
         </motion.ul>
+      )}
+
+      {actionError && (
+        <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
+          <AlertCircle className="mt-0.5 h-4 w-4 flex-none" />
+          <span>{actionError}</span>
+        </div>
       )}
 
       <CreateCompanyDialog
@@ -190,7 +243,124 @@ export default function Companies() {
         onOpenChange={setOpen}
         onCreated={handleCreated}
       />
+
+      <EditCompanyDialog
+        company={editing}
+        onClose={() => setEditing(null)}
+        onSaved={handleSaved}
+      />
     </div>
+  );
+}
+
+function EditCompanyDialog({
+  company,
+  onClose,
+  onSaved,
+}: {
+  company: Company | null;
+  onClose: () => void;
+  onSaved: (updated: Company) => void;
+}) {
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [status, setStatus] = useState<Company["status"]>("active");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (company) {
+      setName(company.name);
+      setSlug(company.slug);
+      setStatus(company.status);
+      setError(null);
+    }
+  }, [company]);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!company) return;
+    if (name.trim().length < 2) {
+      setError("Ad en az 2 karakter");
+      return;
+    }
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+      setError("Slug sadece küçük harf, rakam ve tire içerebilir");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const { data, error: updateError } = await supabase
+      .from("companies")
+      .update({ name: name.trim(), slug: slug.trim(), status })
+      .eq("id", company.id)
+      .select()
+      .single();
+    setSaving(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    onSaved(data as Company);
+  };
+
+  return (
+    <Dialog
+      open={company !== null}
+      onOpenChange={(next) => !next && onClose()}
+      title="Firmayı Düzenle"
+    >
+      <form onSubmit={handleSave} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="edit-co-name">Firma Adı</Label>
+          <Input
+            id="edit-co-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={saving}
+            autoFocus
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="edit-co-slug">Slug</Label>
+          <Input
+            id="edit-co-slug"
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            className="font-mono"
+            disabled={saving}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="edit-co-status">Durum</Label>
+          <select
+            id="edit-co-status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as Company["status"])}
+            disabled={saving}
+            className="flex h-10 w-full rounded-lg border border-slate-200 bg-white/80 px-3 py-2 text-sm dark:border-white/10 dark:bg-slate-900/60 dark:text-white"
+          >
+            <option value="active">Aktif</option>
+            <option value="suspended">Pasif (askıya alındı)</option>
+          </select>
+        </div>
+        {error && (
+          <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
+            <AlertCircle className="mt-0.5 h-4 w-4 flex-none" />
+            <span>{error}</span>
+          </div>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
+            Vazgeç
+          </Button>
+          <Button type="submit" disabled={saving} className="gap-1.5">
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            Kaydet
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   );
 }
 

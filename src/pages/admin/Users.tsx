@@ -10,8 +10,10 @@ import {
   KeyRound,
   Loader2,
   Mail,
+  Pencil,
   Plus,
   RefreshCw,
+  Trash2,
   UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -95,21 +97,33 @@ function formatDate(iso: string) {
   }
 }
 
+type ProfileRow = Profile & {
+  company?: { id: string; name: string; slug: string } | null;
+};
+
 export default function Users() {
   const admin = PORTALS.admin;
-  const [rows, setRows] = useState<Profile[]>([]);
+  const [rows, setRows] = useState<ProfileRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [filter, setFilter] = useState<RoleFilter>("all");
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<ProfileRow | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [companies, setCompanies] = useState<Company[]>([]);
 
   const fetchUsers = async () => {
     setLoading(true);
     setLoadError(null);
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*, company:companies(id,name,slug)")
-      .order("created_at", { ascending: false });
+    const [usersRes, coRes] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("*, company:companies(id,name,slug)")
+        .order("created_at", { ascending: false }),
+      supabase.from("companies").select("*").order("name"),
+    ]);
+    setCompanies(coRes.data ?? []);
+    const { data, error } = usersRes;
     if (error) {
       setLoadError(error.message);
     } else {
@@ -137,9 +151,51 @@ export default function Users() {
         company_id: created.company_id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        company:
+          companies.find((c) => c.id === created.company_id) ?? null,
       },
       ...prev,
     ]);
+  };
+
+  const handleSaved = (updated: ProfileRow) => {
+    setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    setEditing(null);
+  };
+
+  const handleDelete = async (row: ProfileRow) => {
+    if (
+      !confirm(
+        `"${row.email}" hesabını kalıcı olarak silmek üzeresin. Bu kullanıcının login'i, profili ve bağlı çalışan kayıtlarındaki user_id alanları silinecek/temizlenecek. Devam edilsin mi?`,
+      )
+    )
+      return;
+    setActionError(null);
+    const { error } = await supabase.functions.invoke("admin-delete-user", {
+      body: { user_id: row.id },
+    });
+    if (error) {
+      let msg = error.message || "Silme başarısız";
+      const ctx = (error as { context?: Response }).context;
+      if (ctx && typeof ctx.json === "function") {
+        try {
+          const parsed = (await ctx.json()) as {
+            error?: string;
+            detail?: string;
+          };
+          msg = parsed.error
+            ? parsed.detail
+              ? `${parsed.error} — ${parsed.detail}`
+              : parsed.error
+            : msg;
+        } catch {
+          /* not json */
+        }
+      }
+      setActionError(msg);
+      return;
+    }
+    setRows((prev) => prev.filter((r) => r.id !== row.id));
   };
 
   return (
@@ -289,10 +345,37 @@ export default function Users() {
                 <span className="hidden md:inline text-xs text-slate-500 dark:text-slate-400">
                   {formatDate(row.created_at)}
                 </span>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setEditing(row)}
+                    aria-label="Düzenle"
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  {row.role !== "admin" && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(row)}
+                      aria-label="Sil"
+                      className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:text-slate-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               </motion.li>
             );
           })}
         </motion.ul>
+      )}
+
+      {actionError && (
+        <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
+          <AlertCircle className="mt-0.5 h-4 w-4 flex-none" />
+          <span>{actionError}</span>
+        </div>
       )}
 
       <CreateUserDialog
@@ -300,7 +383,136 @@ export default function Users() {
         onOpenChange={setOpen}
         onCreated={handleCreated}
       />
+
+      <EditUserDialog
+        user={editing}
+        companies={companies}
+        onClose={() => setEditing(null)}
+        onSaved={handleSaved}
+      />
     </div>
+  );
+}
+
+function EditUserDialog({
+  user,
+  companies,
+  onClose,
+  onSaved,
+}: {
+  user: ProfileRow | null;
+  companies: Company[];
+  onClose: () => void;
+  onSaved: (updated: ProfileRow) => void;
+}) {
+  const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState<UserRole>("employee");
+  const [companyId, setCompanyId] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      setFullName(user.full_name ?? "");
+      setRole(user.role);
+      setCompanyId(user.company_id ?? "");
+      setError(null);
+    }
+  }, [user]);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    if (role !== "admin" && !companyId) {
+      setError("Müşteri ve çalışan rolleri için firma seçimi zorunlu");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const { data, error: updateError } = await supabase
+      .from("profiles")
+      .update({
+        full_name: fullName.trim() || null,
+        role,
+        company_id: role === "admin" ? null : companyId,
+      })
+      .eq("id", user.id)
+      .select("*, company:companies(id,name,slug)")
+      .single();
+    setSaving(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    onSaved(data as ProfileRow);
+  };
+
+  return (
+    <Dialog
+      open={user !== null}
+      onOpenChange={(next) => !next && onClose()}
+      title="Kullanıcıyı Düzenle"
+      description={user?.email}
+    >
+      <form onSubmit={handleSave} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="edit-user-name">Ad Soyad</Label>
+          <Input
+            id="edit-user-name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            disabled={saving}
+            autoFocus
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="edit-user-role">Rol</Label>
+          <Select
+            id="edit-user-role"
+            value={role}
+            onChange={(e) => setRole(e.target.value as UserRole)}
+            disabled={saving}
+          >
+            <option value="employee">Çalışan</option>
+            <option value="client">Müşteri (Firma Yöneticisi)</option>
+            <option value="admin">Admin</option>
+          </Select>
+        </div>
+        {role !== "admin" && (
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-user-co">Firma</Label>
+            <Select
+              id="edit-user-co"
+              value={companyId}
+              onChange={(e) => setCompanyId(e.target.value)}
+              disabled={saving}
+            >
+              <option value="">— Firma seçin —</option>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
+        {error && (
+          <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
+            <AlertCircle className="mt-0.5 h-4 w-4 flex-none" />
+            <span>{error}</span>
+          </div>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
+            Vazgeç
+          </Button>
+          <Button type="submit" disabled={saving} className="gap-1.5">
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            Kaydet
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   );
 }
 

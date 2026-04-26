@@ -32,10 +32,13 @@ function parseNumberOrNull(v: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+const DEFAULT_GRACE = 15;
+
 export default function ShiftsPanel({ companyId, data, onChange }: Props) {
   const [name, setName] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [grace, setGrace] = useState(String(DEFAULT_GRACE));
   const [isFlexible, setIsFlexible] = useState(false);
   const [minHours, setMinHours] = useState("");
   const [maxHours, setMaxHours] = useState("");
@@ -52,6 +55,7 @@ export default function ShiftsPanel({ companyId, data, onChange }: Props) {
     }
     setCreating(true);
     setError(null);
+    const graceNum = parseNumberOrNull(grace);
     const { data: created, error: insertError } = await supabase
       .from("shifts")
       .insert({
@@ -59,6 +63,7 @@ export default function ShiftsPanel({ companyId, data, onChange }: Props) {
         name: trimmedName,
         start_time: isFlexible ? null : startTime || null,
         end_time: isFlexible ? null : endTime || null,
+        grace_period_minutes: graceNum != null ? Math.round(graceNum) : DEFAULT_GRACE,
         is_flexible: isFlexible,
         min_daily_hours: isFlexible ? parseNumberOrNull(minHours) : null,
         max_daily_hours: isFlexible ? parseNumberOrNull(maxHours) : null,
@@ -74,6 +79,7 @@ export default function ShiftsPanel({ companyId, data, onChange }: Props) {
     setName("");
     setStartTime("");
     setEndTime("");
+    setGrace(String(DEFAULT_GRACE));
     setIsFlexible(false);
     setMinHours("");
     setMaxHours("");
@@ -169,7 +175,7 @@ export default function ShiftsPanel({ companyId, data, onChange }: Props) {
             </Button>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+          <div className="grid gap-3 sm:grid-cols-[1fr_1fr_120px_auto] sm:items-end">
             <div className="space-y-1.5">
               <Label htmlFor="new-shift-start">Başlangıç</Label>
               <Input
@@ -187,6 +193,19 @@ export default function ShiftsPanel({ companyId, data, onChange }: Props) {
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
+                disabled={creating}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-shift-grace">Tolerans (dk)</Label>
+              <Input
+                id="new-shift-grace"
+                type="number"
+                min="0"
+                max="240"
+                value={grace}
+                onChange={(e) => setGrace(e.target.value)}
+                placeholder="15"
                 disabled={creating}
               />
             </div>
@@ -237,7 +256,8 @@ export default function ShiftsPanel({ companyId, data, onChange }: Props) {
                 ) : (
                   <span className="inline-flex items-center gap-1.5 font-mono">
                     <Clock className="h-3 w-3" />
-                    {formatTime(d.start_time)} – {formatTime(d.end_time)}
+                    {formatTime(d.start_time)} – {formatTime(d.end_time)} ·{" "}
+                    {d.grace_period_minutes ?? DEFAULT_GRACE}dk tolerans
                   </span>
                 )
               }
@@ -294,6 +314,7 @@ function EditDialog({
   const [name, setName] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [grace, setGrace] = useState(String(DEFAULT_GRACE));
   const [isFlexible, setIsFlexible] = useState(false);
   const [minHours, setMinHours] = useState("");
   const [maxHours, setMaxHours] = useState("");
@@ -305,6 +326,7 @@ function EditDialog({
       setName(row.name);
       setStartTime(row.start_time?.slice(0, 5) ?? "");
       setEndTime(row.end_time?.slice(0, 5) ?? "");
+      setGrace(String(row.grace_period_minutes ?? DEFAULT_GRACE));
       setIsFlexible(row.is_flexible);
       setMinHours(row.min_daily_hours != null ? String(row.min_daily_hours) : "");
       setMaxHours(row.max_daily_hours != null ? String(row.max_daily_hours) : "");
@@ -322,12 +344,15 @@ function EditDialog({
     }
     setSaving(true);
     setError(null);
+    const graceNum = parseNumberOrNull(grace);
     const { data, error: updateError } = await supabase
       .from("shifts")
       .update({
         name: trimmedName,
         start_time: isFlexible ? null : startTime || null,
         end_time: isFlexible ? null : endTime || null,
+        grace_period_minutes:
+          graceNum != null ? Math.round(graceNum) : DEFAULT_GRACE,
         is_flexible: isFlexible,
         min_daily_hours: isFlexible ? parseNumberOrNull(minHours) : null,
         max_daily_hours: isFlexible ? parseNumberOrNull(maxHours) : null,
@@ -406,26 +431,43 @@ function EditDialog({
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-shift-start">Başlangıç</Label>
-              <Input
-                id="edit-shift-start"
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                disabled={saving}
-              />
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-shift-start">Başlangıç</Label>
+                <Input
+                  id="edit-shift-start"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  disabled={saving}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-shift-end">Bitiş</Label>
+                <Input
+                  id="edit-shift-end"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  disabled={saving}
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="edit-shift-end">Bitiş</Label>
+              <Label htmlFor="edit-shift-grace">Tolerans (dakika)</Label>
               <Input
-                id="edit-shift-end"
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
+                id="edit-shift-grace"
+                type="number"
+                min="0"
+                max="240"
+                value={grace}
+                onChange={(e) => setGrace(e.target.value)}
                 disabled={saving}
               />
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Geç giriş veya erken çıkışta esnek tutulacak süre.
+              </p>
             </div>
           </div>
         )}

@@ -72,6 +72,7 @@ export type Shift = {
   name: string;
   start_time: string | null;
   end_time: string | null;
+  grace_period_minutes: number;
   is_flexible: boolean;
   min_daily_hours: number | null;
   max_daily_hours: number | null;

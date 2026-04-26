@@ -293,8 +293,14 @@ function PersonnelCardForm({
   const onSubmit = async (values: FormValues) => {
     setApiError(null);
     setSavedFlash(false);
-    if (!profile?.company_id) {
-      setApiError("Kullanıcı bir firmaya bağlı değil.");
+    if (!profile) {
+      setApiError("Profil yükleniyor, bir saniye sonra tekrar deneyin.");
+      return;
+    }
+    if (!profile.company_id) {
+      setApiError(
+        "Hesabınız bir firmaya bağlanmamış. Sistem yöneticisinden firma ataması talep edin.",
+      );
       return;
     }
     const payload = toDbPayload(values, profile.company_id);

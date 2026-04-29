@@ -3,7 +3,6 @@ import {
   FileBarChart2,
   Receipt,
   Settings,
-  ShieldCheck,
   UserCircle2,
   Wallet,
 } from "lucide-react";
@@ -24,11 +23,14 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
 import AdminCompanies from "./pages/admin/Companies";
 import AdminFinance from "./pages/admin/Finance";
+import AdminRoles from "./pages/admin/Roles";
 import ClientDashboard from "./pages/client/Dashboard";
 import ClientEmployees from "./pages/client/Employees";
 import ClientAttendance from "./pages/client/Attendance";
 import ClientFinance from "./pages/client/Finance";
 import ClientOrganization from "./pages/client/Organization";
+import ClientRoles from "./pages/client/Roles";
+import ClientAttendanceImport from "./pages/client/AttendanceImport";
 import ClientMessages from "./pages/client/Messages";
 import ClientAnnouncements from "./pages/client/Announcements";
 import ClientEmergency from "./pages/client/Emergency";
@@ -62,17 +64,7 @@ export default function App() {
         <Route path="users" element={<AdminUsers />} />
         <Route path="companies" element={<AdminCompanies />} />
         <Route path="finance" element={<AdminFinance />} />
-        <Route
-          path="roles"
-          element={
-            <Placeholder
-              portal={admin}
-              title="Roller"
-              description="Rol tanımları ve modül bazlı yetki matrisi."
-              icon={ShieldCheck}
-            />
-          }
-        />
+        <Route path="roles" element={<AdminRoles />} />
         <Route
           path="audit"
           element={
@@ -117,6 +109,8 @@ export default function App() {
         <Route path="emergency" element={<ClientEmergency />} />
         <Route path="finance" element={<ClientFinance />} />
         <Route path="organization" element={<ClientOrganization />} />
+        <Route path="roles" element={<ClientRoles />} />
+        <Route path="attendance/import" element={<ClientAttendanceImport />} />
         <Route
           path="reports"
           element={

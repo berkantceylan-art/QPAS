@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
   Building,
   Clock,
+  FileUp,
   Loader2,
   LogIn,
   LogOut,
@@ -175,16 +177,24 @@ export default function Attendance() {
             Bugünkü giriş/çıkış kayıtları ve şube QR panosu.
           </p>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={fetchAll}
-          disabled={loading}
-          className="gap-1.5"
-        >
-          <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-          Yenile
-        </Button>
+        <div className="flex gap-2">
+          <Link to="/client/attendance/import">
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <FileUp className="h-4 w-4" />
+              Eski Veri Aktar
+            </Button>
+          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={fetchAll}
+            disabled={loading}
+            className="gap-1.5"
+          >
+            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+            Yenile
+          </Button>
+        </div>
       </div>
 
       {error && (

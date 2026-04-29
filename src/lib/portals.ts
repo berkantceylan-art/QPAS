@@ -122,6 +122,7 @@ export const PORTALS: Record<PortalConfig["id"], PortalConfig> = {
       { to: "/client/emergency", label: "Acil Çağrılar", icon: AlertTriangle },
       { to: "/client/finance", label: "Finans", icon: Wallet },
       { to: "/client/organization", label: "Organizasyon", icon: Network },
+      { to: "/client/roles", label: "Roller", icon: ShieldCheck },
       { to: "/client/reports", label: "Raporlar", icon: FileBarChart2 },
       { to: "/client/billing", label: "Faturalama", icon: Receipt },
       { to: "/client/settings", label: "Ayarlar", icon: Settings },

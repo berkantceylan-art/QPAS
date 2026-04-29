@@ -266,8 +266,53 @@ export type Employee = {
 
   rfid_card_id: string | null;
   shift_id: string | null;
+  custom_role_id: string | null;
 
   notes: string | null;
   created_at: string;
   updated_at: string;
+};
+
+// ── RBAC ────────────────────────────────────────────────────
+export type PermissionModule =
+  | "personnel"
+  | "finance"
+  | "shifts"
+  | "reports"
+  | "communication"
+  | "settings"
+  | "attendance";
+
+export type PermissionAction = "read" | "write" | "edit" | "delete";
+
+export type PermissionMap = Partial<Record<PermissionModule, PermissionAction[]>>;
+
+export type CustomRole = {
+  id: string;
+  company_id: string;
+  name: string;
+  permissions: PermissionMap;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+// ── Import Jobs ─────────────────────────────────────────────
+export type ImportJobStatus = "processing" | "completed" | "failed";
+
+export type ImportJob = {
+  id: string;
+  company_id: string;
+  uploaded_by: string;
+  file_name: string;
+  file_size_bytes: number | null;
+  status: ImportJobStatus;
+  total_rows: number;
+  imported_rows: number;
+  skipped_rows: number;
+  error_rows: number;
+  errors: Array<{ row: number; message: string }>;
+  column_mapping: Record<string, string>;
+  created_at: string;
+  completed_at: string | null;
 };

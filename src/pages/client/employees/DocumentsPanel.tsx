@@ -19,8 +19,13 @@ import {
   type DocType,
   type Employee,
   type EmployeeDocument,
+  type DocumentRequirement,
 } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { PDFDocument } from "pdf-lib";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+import { useAuth } from "@/hooks/useAuth";
 
 const BUCKET = "employee-documents";
 const MAX_SIZE = 10 * 1024 * 1024;
@@ -61,6 +66,30 @@ const CANONICAL_TYPES: {
     desc: "Son 6 ay",
     icon: ShieldAlert,
   },
+  {
+    type: "diploma",
+    label: "Diploma",
+    desc: "Mezuniyet belgesi",
+    icon: FileText,
+  },
+  {
+    type: "military_status",
+    label: "Askerlik Durumu",
+    desc: "Askerlik belgesi",
+    icon: ShieldAlert,
+  },
+  {
+    type: "family_registry",
+    label: "Nüfus Kayıt",
+    desc: "Vukuatlı nüfus kayıt",
+    icon: FileText,
+  },
+  {
+    type: "kvkk_consent",
+    label: "KVKK Onayı",
+    desc: "İmzalı aydınlatma",
+    icon: FileText,
+  },
 ];
 
 function sanitizeFileName(name: string): string {
@@ -82,7 +111,9 @@ type Props = {
 };
 
 export default function DocumentsPanel({ employee }: Props) {
+  const { profile } = useAuth();
   const [docs, setDocs] = useState<EmployeeDocument[]>([]);
+  const [reqs, setReqs] = useState<DocumentRequirement[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -90,37 +121,78 @@ export default function DocumentsPanel({ employee }: Props) {
 
   const fetchDocs = useCallback(async () => {
     setLoading(true);
-    const { data, error: fetchError } = await supabase
-      .from("employee_documents")
-      .select("*")
-      .eq("employee_id", employee.id)
-      .order("created_at", { ascending: false });
+    const [docsRes, reqsRes] = await Promise.all([
+      supabase
+        .from("employee_documents")
+        .select("*")
+        .eq("employee_id", employee.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("document_requirements")
+        .select("*")
+        .eq("company_id", employee.company_id)
+        .or(`department_id.eq.${employee.department_id || null},department_id.is.null`)
+        .or(`job_title_id.eq.${employee.job_title_id || null},job_title_id.is.null`)
+    ]);
+    
     setLoading(false);
-    if (fetchError) {
-      setError(fetchError.message);
+    if (docsRes.error) {
+      setError(docsRes.error.message);
       return;
     }
-    setDocs((data as EmployeeDocument[]) ?? []);
-  }, [employee.id]);
+    setDocs((docsRes.data as EmployeeDocument[]) ?? []);
+    if (reqsRes.data) {
+      setReqs(reqsRes.data as DocumentRequirement[]);
+    }
+  }, [employee.id, employee.company_id, employee.department_id, employee.job_title_id]);
 
   useEffect(() => {
     fetchDocs();
   }, [fetchDocs]);
 
-  const handleUpload = async (type: DocType, file: File, slotKey: string) => {
-    setError(null);
-    setSuccess(null);
-    if (!ALLOWED_MIME.includes(file.type)) {
+  const handleUpload = async (type: DocType, files: FileList | null, slotKey: string) => {
+    if (!files || files.length === 0) return;
+    if (!ALLOWED_MIME.includes(files[0].type)) {
       setError("Sadece PDF, JPG veya PNG yüklenebilir");
       return;
     }
-    if (file.size > MAX_SIZE) {
-      setError("Dosya 10MB'dan büyük olamaz");
-      return;
-    }
-
+    
     setUploading(slotKey);
     try {
+      let finalFile: File;
+
+      if (files.length === 1 && files[0].type === "application/pdf") {
+        finalFile = files[0];
+      } else {
+        // Merge images to PDF or single image to PDF
+        const pdfDoc = await PDFDocument.create();
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const arrayBuffer = await file.arrayBuffer();
+          if (file.type === "application/pdf") {
+            const loadedPdf = await PDFDocument.load(arrayBuffer);
+            const copiedPages = await pdfDoc.copyPages(loadedPdf, loadedPdf.getPageIndices());
+            copiedPages.forEach((page) => pdfDoc.addPage(page));
+          } else if (file.type.startsWith("image/")) {
+            let image;
+            if (file.type === "image/jpeg" || file.type === "image/jpg") {
+              image = await pdfDoc.embedJpg(arrayBuffer);
+            } else if (file.type === "image/png") {
+              image = await pdfDoc.embedPng(arrayBuffer);
+            }
+            if (image) {
+              const page = pdfDoc.addPage([image.width, image.height]);
+              page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+            }
+          }
+        }
+        const pdfBytes = await pdfDoc.save();
+        finalFile = new File([pdfBytes.buffer as ArrayBuffer], `${type}_merged.pdf`, { type: "application/pdf" });
+      }
+
+      if (finalFile.size > MAX_SIZE) {
+        throw new Error("Dosya 10MB'dan büyük olamaz");
+      }
       // For canonical types, remove the existing doc first (keep one per slot)
       if (type !== "other") {
         const existing = docs.find((d) => d.doc_type === type);
@@ -134,15 +206,15 @@ export default function DocumentsPanel({ employee }: Props) {
       }
 
       const docId = crypto.randomUUID();
-      const safeName = sanitizeFileName(file.name);
+      const safeName = sanitizeFileName(finalFile.name);
       const path = `${employee.company_id}/${employee.id}/${docId}-${safeName}`;
 
       const { error: uploadError } = await supabase.storage
         .from(BUCKET)
-        .upload(path, file, {
+        .upload(path, finalFile, {
           cacheControl: "3600",
           upsert: false,
-          contentType: file.type,
+          contentType: finalFile.type,
         });
 
       if (uploadError) throw uploadError;
@@ -154,9 +226,10 @@ export default function DocumentsPanel({ employee }: Props) {
           company_id: employee.company_id,
           doc_type: type,
           file_path: path,
-          file_name: file.name,
-          mime_type: file.type,
-          size_bytes: file.size,
+          file_name: finalFile.name,
+          mime_type: finalFile.type,
+          size_bytes: finalFile.size,
+          expiry_date: null, // Default
         })
         .select()
         .single();
@@ -168,7 +241,7 @@ export default function DocumentsPanel({ employee }: Props) {
       }
 
       setDocs((prev) => [inserted as EmployeeDocument, ...prev]);
-      setSuccess(`${file.name} yüklendi.`);
+      setSuccess(`${finalFile.name} yüklendi.`);
       setTimeout(() => setSuccess(null), 3000);
     } catch (e) {
       setError((e as Error).message || "Yükleme başarısız");
@@ -206,10 +279,51 @@ export default function DocumentsPanel({ employee }: Props) {
       setError(urlError?.message || "İndirme bağlantısı oluşturulamadı");
       return;
     }
+    if (profile?.id) {
+      await supabase.from("document_audit_logs").insert({
+        company_id: employee.company_id,
+        user_id: profile.id,
+        document_id: doc.id,
+        action: "download"
+      });
+    }
+
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
+  const handleBulkDownload = async () => {
+    if (docs.length === 0) return;
+    setLoading(true);
+    try {
+      const zip = new JSZip();
+      for (const doc of docs) {
+        const { data } = await supabase.storage.from(BUCKET).download(doc.file_path);
+        if (data) {
+          zip.file(doc.file_name, data);
+          if (profile?.id) {
+            await supabase.from("document_audit_logs").insert({
+              company_id: employee.company_id,
+              user_id: profile.id,
+              document_id: doc.id,
+              action: "download"
+            });
+          }
+        }
+      }
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, `${employee.full_name.replace(/\s+/g, "_")}_Evraklar.zip`);
+    } catch (e) {
+      setError("Toplu indirme başarısız oldu.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const otherDocs = docs.filter((d) => d.doc_type === "other");
+
+  const requiredCount = reqs.filter(r => r.is_mandatory).length;
+  const completedCount = reqs.filter(r => r.is_mandatory && docs.some(d => d.doc_type === r.doc_type)).length;
+  const healthScore = requiredCount === 0 ? 100 : Math.round((completedCount / requiredCount) * 100);
 
   if (loading) {
     return (
@@ -221,7 +335,28 @@ export default function DocumentsPanel({ employee }: Props) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between rounded-xl bg-slate-50 p-4 dark:bg-slate-800/50">
+        <div>
+          <h3 className="font-bold text-slate-900 dark:text-white">Evrak Tamamlanma Oranı</h3>
+          <p className="text-sm text-slate-500">Zorunlu belgelere göre uyumluluk skoru</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className={cn("text-2xl font-black", healthScore === 100 ? "text-emerald-500" : healthScore > 50 ? "text-amber-500" : "text-rose-500")}>
+              %{healthScore}
+            </span>
+            {healthScore === 100 && <CheckCircle2 className="h-6 w-6 text-emerald-500" />}
+          </div>
+          {docs.length > 0 && (
+            <Button onClick={handleBulkDownload} variant="outline" size="sm" className="gap-2">
+              <Download className="h-4 w-4" />
+              Tümünü İndir (ZIP)
+            </Button>
+          )}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {CANONICAL_TYPES.map(({ type, label, desc, icon: Icon }) => {
           const doc = docs.find((d) => d.doc_type === type);
@@ -234,9 +369,10 @@ export default function DocumentsPanel({ employee }: Props) {
               icon={<Icon className="h-5 w-5" />}
               doc={doc}
               uploading={uploading === slotKey}
-              onPickFile={(file) => handleUpload(type, file, slotKey)}
+              onPickFile={(files) => handleUpload(type, files, slotKey)}
               onDelete={doc ? () => handleDelete(doc) : undefined}
               onDownload={doc ? () => handleDownload(doc) : undefined}
+              isRequired={reqs.some(r => r.is_mandatory && r.doc_type === type)}
             />
           );
         })}
@@ -254,7 +390,7 @@ export default function DocumentsPanel({ employee }: Props) {
           </div>
           <OtherUploadButton
             uploading={uploading === "other"}
-            onPickFile={(file) => handleUpload("other", file, "other")}
+            onPickFile={(files) => handleUpload("other", files, "other")}
           />
         </div>
         {otherDocs.length === 0 ? (
@@ -328,15 +464,17 @@ function DocSlot({
   onPickFile,
   onDelete,
   onDownload,
+  isRequired,
 }: {
   label: string;
   desc: string;
   icon: React.ReactNode;
   doc: EmployeeDocument | undefined;
   uploading: boolean;
-  onPickFile: (file: File) => void;
+  onPickFile: (files: FileList) => void;
   onDelete?: () => void;
   onDownload?: () => void;
+  isRequired?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -344,8 +482,7 @@ function DocSlot({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) onPickFile(file);
+    if (e.dataTransfer.files?.length > 0) onPickFile(e.dataTransfer.files);
   };
 
   if (doc) {
@@ -355,8 +492,8 @@ function DocSlot({
           {icon}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
-            {label}
+          <p className="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">
+            {label} {isRequired && <span className="text-rose-500">*</span>}
           </p>
           <p className="truncate text-xs text-slate-500 dark:text-slate-400">
             {doc.file_name} · {formatSize(doc.size_bytes)}
@@ -394,11 +531,11 @@ function DocSlot({
         <input
           ref={inputRef}
           type="file"
+          multiple
           accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
           className="hidden"
           onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) onPickFile(file);
+            if (e.target.files?.length) onPickFile(e.target.files);
             e.target.value = "";
           }}
         />
@@ -427,7 +564,7 @@ function DocSlot({
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            {label}
+            {label} {isRequired && <span className="text-rose-500">*</span>}
           </p>
           <p className="truncate text-xs text-slate-500 dark:text-slate-400">
             {desc}
@@ -457,11 +594,11 @@ function DocSlot({
       <input
         ref={inputRef}
         type="file"
+        multiple
         accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
         className="hidden"
         onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) onPickFile(file);
+          if (e.target.files?.length) onPickFile(e.target.files);
           e.target.value = "";
         }}
       />
@@ -474,7 +611,7 @@ function OtherUploadButton({
   onPickFile,
 }: {
   uploading: boolean;
-  onPickFile: (file: File) => void;
+  onPickFile: (files: FileList) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   return (
@@ -497,11 +634,11 @@ function OtherUploadButton({
       <input
         ref={inputRef}
         type="file"
+        multiple
         accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
         className="hidden"
         onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) onPickFile(file);
+          if (e.target.files?.length) onPickFile(e.target.files);
           e.target.value = "";
         }}
       />

@@ -6,6 +6,7 @@ import {
   HandCoins,
   SmartphoneNfc,
   Wallet,
+  AlertCircle,
   type LucideIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -13,6 +14,8 @@ import { cardReveal, staggerContainer } from "@/components/motion/variants";
 import MiniChart from "@/components/portal/MiniChart";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
+import { useState, useEffect } from "react";
 
 type Kpi = {
   label: string;
@@ -112,14 +115,54 @@ function shiftStatus() {
 
 export default function EmployeeDashboard() {
   const { profile, user } = useAuth();
+  const [missingDocs, setMissingDocs] = useState<number>(0);
+
   const firstName =
     profile?.full_name?.split(" ")[0] ||
     user?.email?.split("@")[0] ||
     "Çalışan";
   const status = shiftStatus();
 
+  useEffect(() => {
+    async function checkDocs() {
+      if (!profile?.id) return;
+      // Get employee details
+      const { data: emp } = await supabase.from("employees").select("company_id, department_id, job_title_id").eq("user_id", profile.id).single();
+      if (!emp) return;
+
+      const [reqsRes, docsRes] = await Promise.all([
+        supabase.from("document_requirements").select("doc_type").eq("company_id", emp.company_id).eq("is_mandatory", true).or(`department_id.eq.${emp.department_id || null},department_id.is.null`).or(`job_title_id.eq.${emp.job_title_id || null},job_title_id.is.null`),
+        supabase.from("employee_documents").select("doc_type").eq("employee_id", profile.id)
+      ]);
+
+      if (reqsRes.data && docsRes.data) {
+        const uploadedTypes = new Set(docsRes.data.map((d: any) => d.doc_type));
+        const missingCount = reqsRes.data.filter((r: any) => !uploadedTypes.has(r.doc_type)).length;
+        setMissingDocs(missingCount);
+      }
+    }
+    checkDocs();
+  }, [profile?.id]);
+
   return (
     <div className="space-y-8">
+      {missingDocs > 0 && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-500/30 dark:bg-rose-500/10 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400">
+              <AlertCircle className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-bold text-rose-900 dark:text-rose-100">Aksiyon Gerekli: Eksik Evraklarınız Var</p>
+              <p className="text-sm text-rose-700 dark:text-rose-300">Özlük dosyanızda zorunlu olan {missingDocs} belge eksik. Lütfen yükleyin.</p>
+            </div>
+          </div>
+          <Link to="/employee/profile" className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-rose-700 transition-colors">
+            Hemen Yükle
+          </Link>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>

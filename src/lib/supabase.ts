@@ -220,6 +220,10 @@ export type DocType =
   | "health_report"
   | "contract"
   | "criminal_record"
+  | "diploma"
+  | "military_status"
+  | "family_registry"
+  | "kvkk_consent"
   | "other";
 
 export type EmployeeDocument = {
@@ -232,6 +236,7 @@ export type EmployeeDocument = {
   mime_type: string | null;
   size_bytes: number | null;
   uploaded_by: string | null;
+  expiry_date: string | null;
   created_at: string;
 };
 
@@ -483,4 +488,32 @@ export type PerformanceReview = {
   // relations
   employee?: { id: string; full_name: string };
   reviewer?: { id: string; full_name: string };
+};
+
+// ── Faz 10: Dijital Özlük Dosyası & Evrak Otomasyonu ────────────────
+
+export type DocumentRequirement = {
+  id: string;
+  company_id: string;
+  doc_type: DocType;
+  job_title_id: string | null;
+  department_id: string | null;
+  is_mandatory: boolean;
+  created_at: string;
+  // relations
+  job_title?: { id: string; name: string };
+  department?: { id: string; name: string };
+};
+
+export type DocumentAuditLog = {
+  id: string;
+  company_id: string;
+  user_id: string;
+  document_id: string;
+  action: "view" | "download";
+  ip_address: string | null;
+  created_at: string;
+  // relations
+  user?: { id: string; full_name: string };
+  document?: { id: string; file_name: string; doc_type: string };
 };

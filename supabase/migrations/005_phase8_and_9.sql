@@ -20,11 +20,13 @@ CREATE TABLE IF NOT EXISTS certifications (
 
 ALTER TABLE certifications ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "admin_ops_full_access_certifications" ON certifications;
 CREATE POLICY "admin_ops_full_access_certifications" ON certifications
   FOR ALL USING (
     EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('admin', 'client'))
   );
 
+DROP POLICY IF EXISTS "employee_read_own_certifications" ON certifications;
 CREATE POLICY "employee_read_own_certifications" ON certifications
   FOR SELECT USING (
     EXISTS (
@@ -86,11 +88,13 @@ CREATE TABLE IF NOT EXISTS performance_reviews (
 
 ALTER TABLE performance_reviews ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "admin_ops_full_access_performance" ON performance_reviews;
 CREATE POLICY "admin_ops_full_access_performance" ON performance_reviews
   FOR ALL USING (
     EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('admin', 'client'))
   );
 
+DROP POLICY IF EXISTS "employee_read_own_performance" ON performance_reviews;
 CREATE POLICY "employee_read_own_performance" ON performance_reviews
   FOR SELECT USING (
     status = 'completed' AND -- Sadece tamamlanmışları görebilir

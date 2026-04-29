@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS document_requirements (
 
 ALTER TABLE document_requirements ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "admin_ops_full_access_doc_reqs" ON document_requirements;
 CREATE POLICY "admin_ops_full_access_doc_reqs" ON document_requirements
   FOR ALL USING (
     EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('admin', 'client'))
@@ -43,6 +44,7 @@ CREATE TABLE IF NOT EXISTS document_audit_logs (
 ALTER TABLE document_audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Denetim loglarını sadece admin/client görebilir.
+DROP POLICY IF EXISTS "admin_ops_full_access_doc_audits" ON document_audit_logs;
 CREATE POLICY "admin_ops_full_access_doc_audits" ON document_audit_logs
   FOR ALL USING (
     EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('admin', 'client'))

@@ -122,7 +122,8 @@ function SidebarContent({
 }
 
 function currentBreadcrumb(pathname: string, portal: PortalConfig) {
-  const found = portal.nav.find((n) =>
+  const sorted = [...portal.nav].sort((a, b) => b.to.length - a.to.length);
+  const found = sorted.find((n) =>
     n.end ? pathname === n.to : pathname.startsWith(n.to),
   );
   return found?.label ?? portal.brandLabel;

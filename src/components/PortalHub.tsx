@@ -9,7 +9,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { cardReveal, staggerContainer } from "./motion/variants";
+
+const MotionLink = motion.create(Link);
 
 type Portal = {
   icon: LucideIcon;
@@ -112,9 +115,9 @@ export default function PortalHub() {
               href,
               badge,
             }) => (
-              <motion.a
+              <MotionLink
                 key={title}
-                href={href}
+                to={href}
                 variants={cardReveal}
                 whileHover={{ y: -4 }}
                 transition={{ type: "spring", stiffness: 260, damping: 22 }}
@@ -179,7 +182,7 @@ export default function PortalHub() {
                     <ArrowRight className="h-4 w-4" />
                   </span>
                 </div>
-              </motion.a>
+              </MotionLink>
             ),
           )}
         </motion.div>

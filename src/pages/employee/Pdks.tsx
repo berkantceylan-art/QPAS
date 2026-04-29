@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   CheckCircle2,
   Clock,
@@ -8,34 +8,29 @@ import {
   SmartphoneNfc,
   XCircle,
 } from "lucide-react";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/Button";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
-import { cardReveal, staggerContainer } from "@/components/motion/variants";
+import {
+  useAttendanceLog,
+  useLastCheckStatus,
+  performCheckIn,
+} from "@/hooks/useAttendance";
+import type { AttendanceRecord } from "@/lib/supabase";
 
 type CheckInState = "idle" | "locating" | "success" | "error";
 
-type LogEntry = {
-  type: "Giriş" | "Çıkış";
-  time: string;
-  method: string;
-  location: string;
-};
-
-const MOCK_LOG: LogEntry[] = [
-  { type: "Giriş", time: "08:52", method: "QR", location: "İstanbul, Şişli" },
-  { type: "Çıkış", time: "18:05", method: "QR", location: "İstanbul, Şişli" },
-  { type: "Giriş", time: "09:01", method: "Konum", location: "İstanbul, Şişli" },
-  { type: "Çıkış", time: "17:58", method: "Konum", location: "İstanbul, Şişli" },
-  { type: "Giriş", time: "08:47", method: "QR", location: "İstanbul, Şişli" },
-];
-
-const LOG_DATES = ["Bugün", "Dün", "Pazartesi", "Cuma", "Perşembe"];
-
 export default function EmployeePdks() {
-  useAuth();
+  const { user, profile } = useAuth();
+  const { records, loading: logLoading, refetch: refetchLog } = useAttendanceLog(user?.id);
+  const {
+    isCheckedIn,
+    setIsCheckedIn,
+    loading: statusLoading,
+    refetch: refetchStatus,
+  } = useLastCheckStatus(user?.id);
+
   const [state, setState] = useState<CheckInState>("idle");
-  const [checkedIn, setCheckedIn] = useState(true);
+  const [lastAction, setLastAction] = useState<"Giriş" | "Çıkış">("Giriş");
   const [locationLabel, setLocationLabel] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -45,6 +40,7 @@ export default function EmployeePdks() {
   }).format(new Date());
 
   function handleCheckIn() {
+    if (!user) return;
     setState("locating");
     setErrorMsg(null);
     if (!navigator.geolocation) {
@@ -53,11 +49,39 @@ export default function EmployeePdks() {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const { latitude, longitude } = pos.coords;
-        setLocationLabel(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-        setState("success");
-        setCheckedIn((v) => !v);
+        const locLabel = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        const actionType = isCheckedIn ? "out" : "in";
+        const actionLabel = isCheckedIn ? "Çıkış" : "Giriş";
+
+        try {
+          await performCheckIn({
+            userId: user.id,
+            type: actionType,
+            method: "geo",
+            latitude,
+            longitude,
+            locationLabel: locLabel,
+            actorName: profile?.full_name || user.email || "Çalışan",
+          });
+
+          setLocationLabel(locLabel);
+          setLastAction(actionLabel);
+          setState("success");
+          setIsCheckedIn(!isCheckedIn);
+
+          // Refresh logs
+          await refetchLog();
+          await refetchStatus();
+        } catch (err) {
+          setState("error");
+          setErrorMsg(
+            err instanceof Error
+              ? err.message
+              : "Kayıt oluşturulamadı. Tekrar deneyin.",
+          );
+        }
       },
       () => {
         setState("error");
@@ -69,176 +93,230 @@ export default function EmployeePdks() {
     );
   }
 
-  useEffect(() => {
-    if (state === "success") {
-      const t = setTimeout(() => setState("idle"), 3000);
-      return () => clearTimeout(t);
+  function formatRecordTime(iso: string) {
+    return new Date(iso).toLocaleTimeString("tr-TR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  function formatRecordDate(iso: string) {
+    const d = new Date(iso);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    if (d.toDateString() === today.toDateString()) return "Bugün";
+    if (d.toDateString() === yesterday.toDateString()) return "Dün";
+    return d.toLocaleDateString("tr-TR", { weekday: "long" });
+  }
+
+  function methodLabel(method: AttendanceRecord["method"]) {
+    switch (method) {
+      case "qr":
+        return "QR";
+      case "nfc":
+        return "NFC";
+      case "geo":
+        return "Konum";
+      case "manual":
+        return "Manuel";
     }
-  }, [state]);
+  }
+
+  const isLoading = logLoading || statusLoading;
 
   return (
-    <div className="space-y-8">
-      <div>
+    <div className="mx-auto max-w-md space-y-6">
+      {/* Current time */}
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex flex-col items-center"
+      >
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-orange-600 dark:text-orange-400">
-          Mobil PDKS
+          Anlık Saat
         </p>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
-          Giriş / Çıkış
-        </h1>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          QR kod tara veya konum doğrulamasıyla kaydet.
+        <p className="mt-1 text-5xl font-extrabold tracking-tighter text-slate-900 dark:text-white">
+          {now}
         </p>
-      </div>
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          {new Intl.DateTimeFormat("tr-TR", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          }).format(new Date())}
+        </p>
+      </motion.div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left: action card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white/80 p-8 shadow-sm dark:border-white/10 dark:bg-slate-900/60"
+      {/* Check-in button */}
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="rounded-2xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-white/10 dark:bg-slate-900/60"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 text-white shadow-sm ring-1 ring-white/20">
+            <SmartphoneNfc className="h-5 w-5" strokeWidth={2.25} />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">
+              Konum ile {isCheckedIn ? "Çıkış" : "Giriş"}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              GPS konumunuz doğrulanacak
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleCheckIn}
+          disabled={state === "locating" || isLoading}
+          className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold text-white shadow-lg transition-all ${
+            isCheckedIn
+              ? "bg-gradient-to-r from-rose-500 to-orange-500 shadow-rose-500/25 hover:shadow-rose-500/40"
+              : "bg-gradient-to-r from-emerald-500 to-teal-500 shadow-emerald-500/25 hover:shadow-emerald-500/40"
+          } disabled:opacity-60`}
         >
-          {/* gradient accent */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500"
-          />
+          {state === "locating" ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Konum alınıyor…
+            </>
+          ) : isCheckedIn ? (
+            <>
+              <MapPin className="h-4 w-4" />
+              Çıkış Yap
+            </>
+          ) : (
+            <>
+              <MapPin className="h-4 w-4" />
+              Giriş Yap
+            </>
+          )}
+        </button>
 
-          <div className="flex flex-col items-center gap-6 text-center">
-            {/* QR mockup */}
-            <div className="relative">
-              <div className="flex h-36 w-36 items-center justify-center rounded-2xl border-2 border-dashed border-orange-300 bg-orange-50/60 dark:border-orange-500/40 dark:bg-orange-500/5">
-                <QrCode
-                  className="h-20 w-20 text-orange-400 dark:text-orange-500"
-                  strokeWidth={1.25}
-                />
-              </div>
-              <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-rose-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-900">
-                QR
-              </span>
-            </div>
-
-            <div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Şu an saat{" "}
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  {now}
-                </span>
-              </p>
-              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-                Durum:{" "}
-                <span
-                  className={`font-semibold ${checkedIn ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
-                >
-                  {checkedIn ? "Vardiyada" : "Çıkış yapıldı"}
-                </span>
-              </p>
-            </div>
-
-            {/* Feedback */}
-            {state === "locating" && (
-              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-                Konum alınıyor…
-              </div>
-            )}
-            {state === "success" && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
+        <AnimatePresence mode="wait">
+          {state === "success" && (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-4 overflow-hidden"
+            >
+              <div
                 className="flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
               >
                 <CheckCircle2 className="h-4 w-4" />
-                {checkedIn ? "Giriş" : "Çıkış"} kaydedildi!
+                {lastAction} kaydedildi!
                 {locationLabel && (
                   <span className="text-xs text-emerald-600/70 dark:text-emerald-400/70">
                     {" "}({locationLabel})
                   </span>
                 )}
-              </motion.div>
-            )}
-            {state === "error" && (
-              <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-left text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
+              </div>
+            </motion.div>
+          )}
+          {state === "error" && (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-4 overflow-hidden"
+            >
+              <div className="flex items-start gap-2 rounded-lg bg-rose-50 px-4 py-2.5 text-sm text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
                 <XCircle className="mt-0.5 h-4 w-4 flex-none" />
                 {errorMsg}
               </div>
-            )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            {/* Action buttons */}
-            <div className="flex w-full flex-col gap-3">
-              <Button
-                size="lg"
-                className={`w-full bg-gradient-to-r ${checkedIn ? "from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600" : "from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"} border-0 text-white shadow-lg`}
-                onClick={handleCheckIn}
-                disabled={state === "locating"}
-              >
-                {state === "locating" ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> Konum alınıyor…</>
-                ) : checkedIn ? (
-                  <><Clock className="h-4 w-4" /> Çıkış Yap</>
-                ) : (
-                  <><CheckCircle2 className="h-4 w-4" /> Giriş Yap</>
-                )}
-              </Button>
-              <Button variant="outline" size="sm" className="w-full gap-2" disabled>
-                <SmartphoneNfc className="h-4 w-4" />
-                NFC ile Tara
-                <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-white/10 dark:text-slate-400">
-                  Yakında
-                </span>
-              </Button>
-            </div>
+        {/* Alt yöntemler */}
+        <div className="mt-5 flex items-center gap-3 border-t border-slate-200/60 pt-4 dark:border-white/10">
+          <p className="text-xs text-slate-400 dark:text-slate-500">
+            Diğer yöntemler:
+          </p>
+          <button
+            type="button"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:border-white/20 dark:hover:bg-white/5"
+          >
+            <QrCode className="h-3.5 w-3.5" />
+            QR Tara
+          </button>
+          <button
+            type="button"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:border-white/20 dark:hover:bg-white/5"
+          >
+            <SmartphoneNfc className="h-3.5 w-3.5" />
+            NFC
+          </button>
+        </div>
+      </motion.div>
 
-            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-              <MapPin className="h-3.5 w-3.5 text-orange-400" />
-              Konum doğrulaması etkin — geofence yarıçapı: 500m
-            </div>
+      {/* Log */}
+      <motion.section
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="rounded-2xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-white/10 dark:bg-slate-900/60"
+      >
+        <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-white">
+          Geçmiş Kayıtlar
+        </h2>
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+          Son {records.length} hareket
+        </p>
+
+        {logLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
           </div>
-        </motion.div>
-
-        {/* Right: log */}
-        <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          animate="show"
-          className="space-y-3"
-        >
-          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-            Son Kayıtlar
-          </h2>
-          {MOCK_LOG.map((entry, i) => (
-            <motion.div
-              key={i}
-              variants={cardReveal}
-              className="flex items-center justify-between rounded-xl border border-slate-200/70 bg-white/80 px-4 py-3 shadow-sm dark:border-white/10 dark:bg-slate-900/60"
-            >
-              <div className="flex items-center gap-3">
+        ) : records.length === 0 ? (
+          <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+            Henüz PDKS kaydı yok
+          </p>
+        ) : (
+          <ul className="mt-4 divide-y divide-slate-200/70 dark:divide-white/10">
+            {records.map((r) => (
+              <li
+                key={r.id}
+                className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+              >
                 <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-lg text-white shadow-sm ring-1 ring-white/20 ${entry.type === "Giriş" ? "bg-gradient-to-br from-amber-500 to-orange-500" : "bg-gradient-to-br from-rose-500 to-pink-500"}`}
+                  className={`flex h-8 w-8 flex-none items-center justify-center rounded-lg text-white shadow-sm ring-1 ring-white/20 ${
+                    r.type === "in"
+                      ? "bg-gradient-to-br from-emerald-500 to-teal-500"
+                      : "bg-gradient-to-br from-rose-500 to-orange-500"
+                  }`}
                 >
-                  <Clock className="h-4 w-4" strokeWidth={2.25} />
+                  <Clock className="h-3.5 w-3.5" strokeWidth={2.5} />
                 </span>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    {entry.type}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">
+                    {r.type === "in" ? "Giriş" : "Çıkış"}{" "}
+                    <span className="font-normal text-slate-500 dark:text-slate-400">
+                      — {formatRecordTime(r.created_at)}
+                    </span>
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {entry.method} · {entry.location}
+                  <p className="text-xs text-slate-400 dark:text-slate-500">
+                    {methodLabel(r.method)}
+                    {r.location_label ? ` · ${r.location_label}` : ""}
                   </p>
                 </div>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  {entry.time}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {LOG_DATES[i]}
-                </p>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
+                <span className="whitespace-nowrap text-xs text-slate-400 dark:text-slate-500">
+                  {formatRecordDate(r.created_at)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </motion.section>
     </div>
   );
 }

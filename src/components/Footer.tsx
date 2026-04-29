@@ -41,7 +41,7 @@ export default function Footer() {
               ].map(({ Icon, label }) => (
                 <a
                   key={label}
-                  href="#"
+                  href="#!"
                   aria-label={label}
                   className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/70 bg-white/60 text-slate-600 transition-colors hover:border-cyan-500/40 hover:text-cyan-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:border-cyan-400/40 dark:hover:text-cyan-400"
                 >
@@ -60,7 +60,7 @@ export default function Footer() {
                 {col.links.map((l) => (
                   <li key={l}>
                     <a
-                      href="#"
+                      href="#!"
                       className="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                     >
                       {l}

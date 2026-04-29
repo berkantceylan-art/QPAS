@@ -181,7 +181,7 @@ function HeroMockup() {
                   <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
                     {k.value}
                   </p>
-                  <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  <p className={`text-[10px] font-semibold ${k.delta.startsWith("-") ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`}>
                     {k.delta}
                   </p>
                 </div>

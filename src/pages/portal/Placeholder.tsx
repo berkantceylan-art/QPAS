@@ -43,7 +43,7 @@ export default function Placeholder({ title, description, icon: Icon, portal }: 
           Çekirdek panel hazır; {title.toLowerCase()} özellikleri bir sonraki
           sürümde gelecek.
         </p>
-        <span className={`mt-6 inline-flex items-center gap-1.5 rounded-full border border-current/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider ${portal.accentBadge}`}>
+        <span className={`mt-6 inline-flex items-center gap-1.5 rounded-full border border-slate-300/40 dark:border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider ${portal.accentBadge}`}>
           <Construction className="h-3.5 w-3.5" />
           Yakında
         </span>

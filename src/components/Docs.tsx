@@ -23,28 +23,28 @@ const RESOURCES: Resource[] = [
     title: "Dokümantasyon",
     description: "Kurulum, yapılandırma ve modül kılavuzları.",
     gradient: "from-cyan-500 to-sky-500",
-    href: "#",
+    href: "#!",
   },
   {
     icon: Code2,
     title: "API Referansı",
     description: "REST & webhook uç noktaları, örnek istekler.",
     gradient: "from-indigo-500 to-purple-500",
-    href: "#",
+    href: "#!",
   },
   {
     icon: GraduationCap,
     title: "Kılavuzlar",
     description: "Uygulamalı rehberler ve en iyi pratikler.",
     gradient: "from-emerald-500 to-teal-500",
-    href: "#",
+    href: "#!",
   },
   {
     icon: Users,
     title: "Topluluk",
     description: "Geliştirici forumu ve ürün duyuruları.",
     gradient: "from-amber-500 to-rose-500",
-    href: "#",
+    href: "#!",
   },
 ];
 

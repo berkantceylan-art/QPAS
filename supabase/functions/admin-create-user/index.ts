@@ -1,3 +1,5 @@
+// @ts-nocheck — Bu dosya Supabase Edge Function olarak Deno runtime'da çalışır.
+// jsr: import'ları Deno'ya özgüdür; projenin Node.js/Vite tsconfig'i bunları tanımaz.
 // Deployed via MCP deploy_edge_function with verify_jwt: false.
 // Gateway verification is disabled because supabase-js v2 attaches the
 // new-format publishable key (`sb_publishable_…`) to Authorization, which the
@@ -6,8 +8,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") || "*";
+
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -34,8 +38,11 @@ function generatePassword(length = 14): string {
     symbols[buf[3] % symbols.length],
   ];
   for (let i = 4; i < length; i++) picks.push(all[buf[i] % all.length]);
+  // Crypto-safe Fisher-Yates shuffle
+  const shuffleBuf = new Uint32Array(picks.length);
+  crypto.getRandomValues(shuffleBuf);
   for (let i = picks.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = shuffleBuf[i] % (i + 1);
     [picks[i], picks[j]] = [picks[j], picks[i]];
   }
   return picks.join("");

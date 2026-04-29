@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,8 @@ export function Dialog({
   footer,
   className,
 }: DialogProps) {
+  const titleId = useId();
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -43,7 +45,7 @@ export function Dialog({
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="dialog-title"
+          aria-labelledby={titleId}
         >
           <motion.button
             type="button"
@@ -68,7 +70,7 @@ export function Dialog({
             <div className="flex items-start justify-between gap-4 border-b border-slate-200/70 px-5 py-4 dark:border-white/10">
               <div className="min-w-0 flex-1">
                 <h2
-                  id="dialog-title"
+                  id={titleId}
                   className="text-base font-semibold tracking-tight text-slate-900 dark:text-white"
                 >
                   {title}

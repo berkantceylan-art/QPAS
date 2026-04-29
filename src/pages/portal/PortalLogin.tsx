@@ -25,7 +25,6 @@ import type { PortalConfig } from "@/lib/portals";
 const loginSchema = z.object({
   email: z.string().min(1, "E-posta gerekli").email("Geçerli bir e-posta girin"),
   password: z.string().min(6, "Şifre en az 6 karakter olmalı"),
-  remember: z.boolean().optional(),
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
@@ -33,7 +32,7 @@ type LoginValues = z.infer<typeof loginSchema>;
 export default function PortalLogin({ portal }: { portal: PortalConfig }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, signIn } = useAuth();
   const { theme, toggle } = useTheme();
   const [formError, setFormError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -44,29 +43,32 @@ export default function PortalLogin({ portal }: { portal: PortalConfig }) {
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "", remember: true },
+    defaultValues: { email: "", password: "" },
   });
 
   useEffect(() => {
-    if (!loading && user && profile?.role === portal.role) {
-      const from = (location.state as { from?: string } | null)?.from;
-      navigate(
-        from && from.startsWith(portal.basePath) ? from : portal.basePath,
-        { replace: true },
-      );
+    if (!loading && user && profile) {
+      const canAccess =
+        profile.role === "admin" || profile.role === portal.role;
+      if (canAccess) {
+        const from = (location.state as { from?: string } | null)?.from;
+        navigate(
+          from && from.startsWith(portal.basePath) ? from : portal.basePath,
+          { replace: true },
+        );
+      }
     }
   }, [loading, user, profile, navigate, location.state, portal]);
 
   const onSubmit = async (values: LoginValues) => {
     setFormError(null);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: values.email,
-      password: values.password,
-    });
+    const { error } = await signIn(values.email, values.password);
     if (error) {
       setFormError("E-posta veya şifre hatalı.");
       return;
     }
+    // Auth state change will trigger profile load via AuthProvider.
+    // We still need to verify the role matches this portal.
     const { data: userData } = await supabase.auth.getUser();
     const uid = userData.user?.id;
     if (!uid) {
@@ -79,7 +81,11 @@ export default function PortalLogin({ portal }: { portal: PortalConfig }) {
       .eq("id", uid)
       .maybeSingle();
 
-    if (!profileRow || profileRow.role !== portal.role) {
+    const allowed: string[] =
+      portal.role === "admin"
+        ? ["admin"]
+        : [portal.role, "admin"];
+    if (!profileRow || !allowed.includes(profileRow.role)) {
       await supabase.auth.signOut();
       setFormError(portal.login.mismatchError);
       return;
@@ -145,7 +151,7 @@ export default function PortalLogin({ portal }: { portal: PortalConfig }) {
         >
           <motion.div variants={fadeUp}>
             <span
-              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${portal.accentBadge} border-current/20`}
+              className={`inline-flex items-center gap-2 rounded-full border border-slate-300/40 dark:border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider ${portal.accentBadge}`}
             >
               <EyebrowIcon className="h-3.5 w-3.5" />
               {eyebrow}
@@ -190,7 +196,7 @@ export default function PortalLogin({ portal }: { portal: PortalConfig }) {
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Şifre</Label>
                 <a
-                  href="#"
+                  href="#!"
                   className={`text-xs font-medium ${portal.accentText} hover:opacity-80`}
                 >
                   Şifremi unuttum
@@ -224,16 +230,6 @@ export default function PortalLogin({ portal }: { portal: PortalConfig }) {
               )}
             </div>
 
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500 dark:border-white/20 dark:bg-slate-900"
-                  {...register("remember")}
-                />
-                Beni hatırla
-              </label>
-            </div>
 
             {formError && (
               <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">

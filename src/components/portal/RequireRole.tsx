@@ -32,7 +32,7 @@ export default function RequireRole({ portal, children }: Props) {
   }
 
   const allowed: UserRole[] =
-    portal.role === "admin" ? ["admin"] : [portal.role];
+    portal.role === "admin" ? ["admin"] : [portal.role, "admin"];
 
   if (!profile || !allowed.includes(profile.role)) {
     return <Navigate to="/" replace />;

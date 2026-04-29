@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { KeyRound, Menu, Moon, Sun, X } from "lucide-react";
 import { Button } from "./ui/Button";
 import { useTheme } from "@/hooks/useTheme";
@@ -69,11 +68,11 @@ export default function Navbar() {
               <Moon className="h-4 w-4" />
             )}
           </Button>
-          <Link to="/admin/login" className="hidden sm:inline-flex">
+          <a href="#portals" className="hidden sm:inline-flex">
             <Button variant="ghost" size="sm">
               Giriş Yap
             </Button>
-          </Link>
+          </a>
           <Button size="sm" className="hidden sm:inline-flex">
             Demo Al
           </Button>
@@ -104,15 +103,15 @@ export default function Navbar() {
               </a>
             ))}
             <div className="mt-2 flex gap-2">
-              <Link
-                to="/admin/login"
+              <a
+                href="#portals"
                 className="flex-1"
                 onClick={() => setOpen(false)}
               >
                 <Button variant="outline" size="sm" className="w-full">
                   Giriş Yap
                 </Button>
-              </Link>
+              </a>
               <Button size="sm" className="flex-1">
                 Demo Al
               </Button>

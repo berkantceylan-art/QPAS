@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /client/
+Disallow: /employee/
+
+Sitemap: https://qpass.io/sitemap.xml

@@ -385,3 +385,67 @@ export type SystemNotification = {
   is_read: boolean;
   created_at: string;
 };
+
+// ── Faz 7: Demirbaşlar ve Vardiya Değişimleri ─────────────────────
+
+export type InventoryItem = {
+  id: string;
+  company_id: string;
+  item_name: string;
+  serial_no: string | null;
+  category: string;
+  status: "available" | "assigned" | "maintenance" | "retired";
+  value: number;
+  purchase_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AssetAssignment = {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  inventory_id: string;
+  given_date: string;
+  return_date: string | null;
+  condition_notes: string | null;
+  digital_signature: string | null;
+  signature_date: string | null;
+  status: "active" | "returned";
+  created_at: string;
+  updated_at: string;
+  // join relations
+  inventory?: InventoryItem;
+  employee?: {
+    id: string;
+    full_name: string;
+  };
+};
+
+export type ShiftRotation = {
+  id: string;
+  company_id: string;
+  name: string;
+  pattern_days: Array<{ dayIndex: number; shift_id: string | null }>;
+  created_at: string;
+};
+
+export type ShiftSwap = {
+  id: string;
+  company_id: string;
+  requester_id: string;
+  target_id: string;
+  date_requested: string;
+  requester_shift_id: string | null;
+  target_shift_id: string | null;
+  status: "pending_peer" | "pending_manager" | "approved" | "rejected";
+  reason: string | null;
+  created_at: string;
+  updated_at: string;
+  // relations
+  requester?: { id: string; full_name: string };
+  target?: { id: string; full_name: string };
+  requester_shift?: { id: string; name: string };
+  target_shift?: { id: string; name: string };
+};

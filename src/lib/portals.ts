@@ -23,6 +23,8 @@ import {
   Users,
   UsersRound,
   Wallet,
+  Box,
+  ArrowLeftRight,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "./supabase";
@@ -125,6 +127,7 @@ export const PORTALS: Record<PortalConfig["id"], PortalConfig> = {
       { to: "/client/finance/payroll", label: "Bordrolar", icon: FileText },
       { to: "/client/organization", label: "Organizasyon", icon: Network },
       { to: "/client/roles", label: "Roller", icon: ShieldCheck },
+      { to: "/client/inventory", label: "Demirbaş", icon: Box },
       { to: "/client/reports", label: "Raporlar", icon: FileBarChart2 },
       { to: "/client/billing", label: "Faturalama", icon: Receipt },
       { to: "/client/settings", label: "Ayarlar", icon: Settings },
@@ -169,6 +172,8 @@ export const PORTALS: Record<PortalConfig["id"], PortalConfig> = {
       { to: "/employee/emergency", label: "Acil Çağrı", icon: AlertTriangle },
       { to: "/employee/payroll", label: "Bordro & Puantaj", icon: Wallet },
       { to: "/employee/requests", label: "Talepler", icon: HandCoins },
+      { to: "/employee/swap", label: "Takas Talebi", icon: ArrowLeftRight },
+      { to: "/employee/assets", label: "Demirbaş", icon: Box },
       { to: "/employee/profile", label: "Özlük", icon: UserCircle2 },
     ],
     login: {

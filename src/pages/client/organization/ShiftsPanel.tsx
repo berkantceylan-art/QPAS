@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   AlertCircle,
   Clock,
@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/Label";
 import { Dialog } from "@/components/ui/Dialog";
 import { supabase, type Shift } from "@/lib/supabase";
 import EntityRow from "./EntityRow";
+import { Check, X as XIcon, ArrowLeftRight } from "lucide-react";
 
 type Props = {
   companyId: string;
@@ -298,7 +299,71 @@ export default function ShiftsPanel({ companyId, data, onChange }: Props) {
           setEditing(null);
         }}
       />
+
+      <div className="mt-8">
+        <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <ArrowLeftRight className="h-5 w-5 text-indigo-500" />
+          Vardiya Takas Talepleri (Yönetici Onayı)
+        </h2>
+        <ShiftSwapsList companyId={companyId} />
+      </div>
     </div>
+  );
+}
+
+function ShiftSwapsList({ companyId }: { companyId: string }) {
+  const [swaps, setSwaps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadSwaps = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("shift_swaps")
+      .select("*, requester:employees!requester_id(full_name), target:employees!target_id(full_name)")
+      .eq("company_id", companyId)
+      .eq("status", "pending_manager")
+      .order("created_at", { ascending: false });
+    
+    if (data) setSwaps(data);
+    setLoading(false);
+  }, [companyId]);
+
+  useEffect(() => {
+    loadSwaps();
+  }, [loadSwaps]);
+
+  const handleApprove = async (id: string, accept: boolean) => {
+    const status = accept ? "approved" : "rejected";
+    await supabase.from("shift_swaps").update({ status }).eq("id", id);
+    loadSwaps();
+  };
+
+  if (loading) return <div className="text-sm text-slate-500 py-4"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Yükleniyor...</div>;
+  if (swaps.length === 0) return <div className="text-sm text-slate-500 py-4">Bekleyen takas talebi yok.</div>;
+
+  return (
+    <ul className="space-y-3">
+      {swaps.map(s => (
+        <li key={s.id} className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-4 shadow-sm dark:border-indigo-500/30 dark:bg-indigo-500/5 flex items-center justify-between">
+          <div>
+            <div className="text-sm font-semibold text-slate-900 dark:text-white">
+              {s.requester?.full_name} <ArrowLeftRight className="inline h-3 w-3 text-slate-400 mx-1" /> {s.target?.full_name}
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Tarih: {new Date(s.date_requested).toLocaleDateString("tr-TR")} {s.reason && ` | Mazeret: "${s.reason}"`}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="text-rose-600 hover:text-rose-700" onClick={() => handleApprove(s.id, false)}>
+              <XIcon className="mr-1 h-3 w-3" /> Reddet
+            </Button>
+            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" onClick={() => handleApprove(s.id, true)}>
+              <Check className="mr-1 h-3 w-3" /> Onayla
+            </Button>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 

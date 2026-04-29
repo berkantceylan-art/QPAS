@@ -36,12 +36,15 @@ import ClientAnnouncements from "./pages/client/Announcements";
 import ClientEmergency from "./pages/client/Emergency";
 import ClientLegalSettings from "./pages/client/LegalSettings";
 import ClientPayrollDashboard from "./pages/client/PayrollDashboard";
+import ClientInventory from "./pages/client/Inventory";
 import EmployeeDashboard from "./pages/employee/Dashboard";
 import EmployeePdks from "./pages/employee/Pdks";
 import EmployeeRequests from "./pages/employee/Requests";
 import EmployeeMessages from "./pages/employee/Messages";
 import EmployeeAnnouncements from "./pages/employee/Announcements";
 import EmployeeEmergency from "./pages/employee/Emergency";
+import EmployeeMyAssets from "./pages/employee/MyAssets";
+import EmployeeShiftSwap from "./pages/employee/ShiftSwap";
 
 const admin = PORTALS.admin;
 const client = PORTALS.client;
@@ -112,6 +115,7 @@ export default function App() {
         <Route path="finance" element={<ClientFinance />} />
         <Route path="finance/payroll" element={<ClientPayrollDashboard />} />
         <Route path="organization" element={<ClientOrganization />} />
+        <Route path="inventory" element={<ClientInventory />} />
         <Route path="roles" element={<ClientRoles />} />
         <Route path="attendance/import" element={<ClientAttendanceImport />} />
         <Route path="settings/legal" element={<ClientLegalSettings />} />
@@ -165,9 +169,12 @@ export default function App() {
       >
         <Route index element={<EmployeeDashboard />} />
         <Route path="pdks" element={<EmployeePdks />} />
+        <Route path="requests" element={<EmployeeRequests />} />
+        <Route path="swap" element={<EmployeeShiftSwap />} />
         <Route path="messages" element={<EmployeeMessages />} />
         <Route path="announcements" element={<EmployeeAnnouncements />} />
         <Route path="emergency" element={<EmployeeEmergency />} />
+        <Route path="assets" element={<EmployeeMyAssets />} />
         <Route
           path="payroll"
           element={

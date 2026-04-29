@@ -258,11 +258,15 @@ export type Employee = {
   branch_id: string | null;
   contract_type: ContractType | null;
 
-  salary: number | null;
+  salary: number | null; // This represents total_agreed_salary now
+  official_salary: number | null;
   iban: string | null;
   bank_name: string | null;
   sgk_type: SgkType | null;
   tax_office: string | null;
+  is_retired: boolean;
+  disability_degree: number;
+  is_part_time: boolean;
 
   rfid_card_id: string | null;
   shift_id: string | null;
@@ -315,4 +319,69 @@ export type ImportJob = {
   column_mapping: Record<string, string>;
   created_at: string;
   completed_at: string | null;
+};
+
+// ── Faz 6: Yasal Parametreler ve Bordro ─────────────────────
+
+export type TaxBracket = {
+  limit: number;
+  rate: number;
+};
+
+export type PayrollParameter = {
+  id: string;
+  company_id: string;
+  year: number;
+  month: number | null;
+  min_wage_gross: number;
+  min_wage_net: number;
+  sgk_floor: number;
+  sgk_ceiling: number;
+  stamp_tax_rate: number;
+  disability_discount_1: number;
+  disability_discount_2: number;
+  disability_discount_3: number;
+  tax_brackets: TaxBracket[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type Payroll = {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  period_year: number;
+  period_month: number;
+  worked_days: number;
+  official_gross: number;
+  official_net: number;
+  sgk_employee: number;
+  sgk_employer: number;
+  income_tax: number;
+  stamp_tax: number;
+  advance_deduction: number;
+  total_agreed_salary: number;
+  cash_difference: number;
+  total_employer_cost: number;
+  status: "draft" | "finalized";
+  created_at: string;
+  updated_at: string;
+  // Join relations
+  employee?: {
+    id: string;
+    full_name: string;
+    department_id: string | null;
+  };
+};
+
+export type SystemNotification = {
+  id: string;
+  company_id: string;
+  user_id: string | null;
+  title: string;
+  message: string;
+  type: string;
+  link: string | null;
+  is_read: boolean;
+  created_at: string;
 };

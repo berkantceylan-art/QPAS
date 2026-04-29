@@ -34,6 +34,8 @@ import ClientAttendanceImport from "./pages/client/AttendanceImport";
 import ClientMessages from "./pages/client/Messages";
 import ClientAnnouncements from "./pages/client/Announcements";
 import ClientEmergency from "./pages/client/Emergency";
+import ClientLegalSettings from "./pages/client/LegalSettings";
+import ClientPayrollDashboard from "./pages/client/PayrollDashboard";
 import EmployeeDashboard from "./pages/employee/Dashboard";
 import EmployeePdks from "./pages/employee/Pdks";
 import EmployeeRequests from "./pages/employee/Requests";
@@ -108,9 +110,11 @@ export default function App() {
         <Route path="announcements" element={<ClientAnnouncements />} />
         <Route path="emergency" element={<ClientEmergency />} />
         <Route path="finance" element={<ClientFinance />} />
+        <Route path="finance/payroll" element={<ClientPayrollDashboard />} />
         <Route path="organization" element={<ClientOrganization />} />
         <Route path="roles" element={<ClientRoles />} />
         <Route path="attendance/import" element={<ClientAttendanceImport />} />
+        <Route path="settings/legal" element={<ClientLegalSettings />} />
         <Route
           path="reports"
           element={

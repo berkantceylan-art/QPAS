@@ -7,7 +7,6 @@ import {
   useNavigate,
 } from "react-router-dom";
 import {
-  Bell,
   KeyRound,
   LogOut,
   Menu,
@@ -20,6 +19,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import type { PortalConfig } from "@/lib/portals";
+import NotificationBell from "./NotificationBell";
 
 function initials(name: string | null | undefined, email: string) {
   const source = (name && name.trim()) || email;
@@ -203,14 +203,7 @@ export default function PortalLayout({ portal }: { portal: PortalConfig }) {
                 <Moon className="h-4 w-4" />
               )}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Bildirimler"
-              className="rounded-full"
-            >
-              <Bell className="h-4 w-4" />
-            </Button>
+            <NotificationBell />
           </div>
         </header>
 

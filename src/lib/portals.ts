@@ -25,6 +25,11 @@ import {
   Wallet,
   Box,
   ArrowLeftRight,
+  ShieldAlert,
+  Target,
+  Send,
+  FileBarChart,
+  GraduationCap,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "./supabase";
@@ -127,7 +132,11 @@ export const PORTALS: Record<PortalConfig["id"], PortalConfig> = {
       { to: "/client/finance/payroll", label: "Bordrolar", icon: FileText },
       { to: "/client/organization", label: "Organizasyon", icon: Network },
       { to: "/client/roles", label: "Roller", icon: ShieldCheck },
+      { to: "/client/compliance", label: "İSG & Eğitim", icon: ShieldAlert },
+      { to: "/client/performance", label: "Performans", icon: Target },
       { to: "/client/inventory", label: "Demirbaş", icon: Box },
+      { to: "/client/export", label: "Çıktı Merkezi", icon: Send },
+      { to: "/client/costs", label: "Maliyet Analizi", icon: FileBarChart },
       { to: "/client/reports", label: "Raporlar", icon: FileBarChart2 },
       { to: "/client/billing", label: "Faturalama", icon: Receipt },
       { to: "/client/settings", label: "Ayarlar", icon: Settings },
@@ -174,6 +183,7 @@ export const PORTALS: Record<PortalConfig["id"], PortalConfig> = {
       { to: "/employee/requests", label: "Talepler", icon: HandCoins },
       { to: "/employee/swap", label: "Takas Talebi", icon: ArrowLeftRight },
       { to: "/employee/assets", label: "Demirbaş", icon: Box },
+      { to: "/employee/development", label: "Gelişim", icon: GraduationCap },
       { to: "/employee/profile", label: "Özlük", icon: UserCircle2 },
     ],
     login: {

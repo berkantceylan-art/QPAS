@@ -449,3 +449,38 @@ export type ShiftSwap = {
   requester_shift?: { id: string; name: string };
   target_shift?: { id: string; name: string };
 };
+
+// ── Faz 8 & 9: İSG, Eğitim ve Performans ─────────────────────────────
+
+export type Certification = {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  name: string;
+  type: "ohs_medical" | "ohs_training" | "professional_training";
+  issue_date: string | null;
+  expiry_date: string | null;
+  provider: string | null;
+  status: "active" | "expired" | "pending";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  // relations
+  employee?: { id: string; full_name: string };
+};
+
+export type PerformanceReview = {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  reviewer_id: string | null;
+  period_name: string;
+  kpi_score: number | null;
+  feedback_notes: string | null;
+  status: "draft" | "completed";
+  created_at: string;
+  updated_at: string;
+  // relations
+  employee?: { id: string; full_name: string };
+  reviewer?: { id: string; full_name: string };
+};

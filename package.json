@@ -24,6 +24,7 @@
     "react-hook-form": "^7.72.1",
     "react-router-dom": "^6.30.3",
     "react-signature-canvas": "^1.1.0-alpha.2",
+    "recharts": "^3.8.1",
     "tailwind-merge": "^2.5.4",
     "zod": "^3.25.76"
   },

@@ -37,6 +37,10 @@ import ClientEmergency from "./pages/client/Emergency";
 import ClientLegalSettings from "./pages/client/LegalSettings";
 import ClientPayrollDashboard from "./pages/client/PayrollDashboard";
 import ClientInventory from "./pages/client/Inventory";
+import ClientCompliance from "./pages/client/Compliance";
+import ClientPerformance from "./pages/client/Performance";
+import ClientExportCenter from "./pages/client/ExportCenter";
+import ClientCostAnalysis from "./pages/client/CostAnalysis";
 import EmployeeDashboard from "./pages/employee/Dashboard";
 import EmployeePdks from "./pages/employee/Pdks";
 import EmployeeRequests from "./pages/employee/Requests";
@@ -45,6 +49,7 @@ import EmployeeAnnouncements from "./pages/employee/Announcements";
 import EmployeeEmergency from "./pages/employee/Emergency";
 import EmployeeMyAssets from "./pages/employee/MyAssets";
 import EmployeeShiftSwap from "./pages/employee/ShiftSwap";
+import EmployeeMyDevelopment from "./pages/employee/MyDevelopment";
 
 const admin = PORTALS.admin;
 const client = PORTALS.client;
@@ -115,7 +120,11 @@ export default function App() {
         <Route path="finance" element={<ClientFinance />} />
         <Route path="finance/payroll" element={<ClientPayrollDashboard />} />
         <Route path="organization" element={<ClientOrganization />} />
+        <Route path="compliance" element={<ClientCompliance />} />
+        <Route path="performance" element={<ClientPerformance />} />
         <Route path="inventory" element={<ClientInventory />} />
+        <Route path="export" element={<ClientExportCenter />} />
+        <Route path="costs" element={<ClientCostAnalysis />} />
         <Route path="roles" element={<ClientRoles />} />
         <Route path="attendance/import" element={<ClientAttendanceImport />} />
         <Route path="settings/legal" element={<ClientLegalSettings />} />
@@ -175,6 +184,7 @@ export default function App() {
         <Route path="announcements" element={<EmployeeAnnouncements />} />
         <Route path="emergency" element={<EmployeeEmergency />} />
         <Route path="assets" element={<EmployeeMyAssets />} />
+        <Route path="development" element={<EmployeeMyDevelopment />} />
         <Route
           path="payroll"
           element={

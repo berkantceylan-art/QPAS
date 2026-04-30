@@ -9,10 +9,10 @@ import { supabase, type PayrollParameter, type TaxBracket } from "@/lib/supabase
 import { useAuth } from "@/hooks/useAuth";
 
 const DEFAULT_TAX_BRACKETS: TaxBracket[] = [
-  { limit: 110000, rate: 15 },
-  { limit: 230000, rate: 20 },
-  { limit: 870000, rate: 27 },
-  { limit: 3000000, rate: 35 },
+  { limit: 190000, rate: 15 },
+  { limit: 400000, rate: 20 },
+  { limit: 1500000, rate: 27 },
+  { limit: 5300000, rate: 35 },
   { limit: 999999999, rate: 40 },
 ];
 
@@ -71,14 +71,14 @@ export default function LegalSettings() {
     } else {
       // Not found, reset to defaults
       setParamId(null);
-      setMinWageGross(20002.50);
-      setMinWageNet(17002.12);
-      setSgkFloor(20002.50);
-      setSgkCeiling(150018.90);
+      setMinWageGross(33030.00);
+      setMinWageNet(28075.50);
+      setSgkFloor(33030.00);
+      setSgkCeiling(297270.00);
       setStampTaxRate(0.00759);
-      setDisability1(6800);
-      setDisability2(3500);
-      setDisability3(1700);
+      setDisability1(12000);
+      setDisability2(7000);
+      setDisability3(3000);
       setTaxBrackets(DEFAULT_TAX_BRACKETS);
     }
     setLoading(false);
@@ -141,19 +141,19 @@ export default function LegalSettings() {
         // Fallback mock data if function isn't deployed yet locally
         console.log("Edge function failed/not deployed, using fallback", fnError);
         legalData = {
-          min_wage_gross: 24500.00,
-          min_wage_net: 20825.00,
-          sgk_floor: 24500.00,
-          sgk_ceiling: 183750.00,
+          min_wage_gross: 33030.00,
+          min_wage_net: 28075.50,
+          sgk_floor: 33030.00,
+          sgk_ceiling: 297270.00,
           stamp_tax_rate: 0.00759,
-          disability_discount_1: 8500,
-          disability_discount_2: 4400,
-          disability_discount_3: 2100,
+          disability_discount_1: 12000,
+          disability_discount_2: 7000,
+          disability_discount_3: 3000,
           tax_brackets: [
-            { limit: 140000, rate: 15 },
-            { limit: 280000, rate: 20 },
-            { limit: 1050000, rate: 27 },
-            { limit: 3500000, rate: 35 },
+            { limit: 190000, rate: 15 },
+            { limit: 400000, rate: 20 },
+            { limit: 1500000, rate: 27 },
+            { limit: 5300000, rate: 35 },
             { limit: 999999999, rate: 40 }
           ]
         };

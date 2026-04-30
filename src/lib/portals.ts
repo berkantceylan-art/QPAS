@@ -39,6 +39,7 @@ export type NavItem = {
   label: string;
   icon: LucideIcon;
   end?: boolean;
+  group?: string;
 };
 
 export type PortalConfig = {
@@ -123,24 +124,25 @@ export const PORTALS: Record<PortalConfig["id"], PortalConfig> = {
     dashboardEyebrow: "İşletme Özeti",
     nav: [
       { to: "/client", label: "Genel Bakış", icon: LayoutDashboard, end: true },
-      { to: "/client/employees", label: "Çalışanlar", icon: UsersRound },
-      { to: "/client/attendance", label: "Devam", icon: Fingerprint },
-      { to: "/client/messages", label: "Mesajlar", icon: MessagesSquare },
-      { to: "/client/announcements", label: "Duyurular", icon: Megaphone },
-      { to: "/client/emergency", label: "Acil Çağrılar", icon: AlertTriangle },
-      { to: "/client/finance", label: "Finans", icon: Wallet },
-      { to: "/client/finance/payroll", label: "Bordrolar", icon: FileText },
-      { to: "/client/organization", label: "Organizasyon", icon: Network },
-      { to: "/client/roles", label: "Roller", icon: ShieldCheck },
-      { to: "/client/compliance", label: "İSG & Eğitim", icon: ShieldAlert },
-      { to: "/client/performance", label: "Performans", icon: Target },
-      { to: "/client/inventory", label: "Demirbaş", icon: Box },
-      { to: "/client/export", label: "Çıktı Merkezi", icon: Send },
-      { to: "/client/costs", label: "Maliyet Analizi", icon: FileBarChart },
-      { to: "/client/reports", label: "Raporlar", icon: FileBarChart2 },
-      { to: "/client/billing", label: "Faturalama", icon: Receipt },
-      { to: "/client/settings", label: "Ayarlar", icon: Settings },
-      { to: "/client/settings/legal", label: "Yasal Ayarlar", icon: Scale },
+      { to: "/client/employees", label: "Çalışanlar", icon: UsersRound, group: "Personel" },
+      { to: "/client/organization", label: "Organizasyon", icon: Network, group: "Personel" },
+      { to: "/client/roles", label: "Roller", icon: ShieldCheck, group: "Personel" },
+      { to: "/client/attendance", label: "Devam", icon: Fingerprint, group: "Operasyon" },
+      { to: "/client/messages", label: "Mesajlar", icon: MessagesSquare, group: "Operasyon" },
+      { to: "/client/announcements", label: "Duyurular", icon: Megaphone, group: "Operasyon" },
+      { to: "/client/emergency", label: "Acil Çağrılar", icon: AlertTriangle, group: "Operasyon" },
+      { to: "/client/finance", label: "Finans", icon: Wallet, group: "Finans" },
+      { to: "/client/finance/payroll", label: "Bordrolar", icon: FileText, group: "Finans" },
+      { to: "/client/export", label: "Çıktı Merkezi", icon: Send, group: "Finans" },
+      { to: "/client/costs", label: "Maliyet Analizi", icon: FileBarChart, group: "Finans" },
+      { to: "/client/compliance", label: "İSG & Eğitim", icon: ShieldAlert, group: "Uyumluluk" },
+      { to: "/client/performance", label: "Performans", icon: Target, group: "Uyumluluk" },
+      { to: "/client/reports", label: "Raporlar", icon: FileBarChart2, group: "Uyumluluk" },
+      { to: "/client/inventory", label: "Demirbaş", icon: Box, group: "Varlık" },
+      { to: "/client/settings", label: "Ayarlar", icon: Settings, group: "Ayarlar" },
+      { to: "/client/settings/legal", label: "Yasal Ayarlar", icon: Scale, group: "Ayarlar" },
+      { to: "/client/settings/documents", label: "Belge Ayarları", icon: FileText, group: "Ayarlar" },
+      { to: "/client/billing", label: "Faturalama", icon: Receipt, group: "Ayarlar" },
     ],
     login: {
       eyebrow: "Müşteri Portalı",

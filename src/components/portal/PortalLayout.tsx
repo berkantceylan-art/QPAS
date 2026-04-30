@@ -67,28 +67,72 @@ function SidebarContent({
       </Link>
 
       <nav className="flex-1 overflow-y-auto px-3 py-5">
-        <ul className="space-y-1">
-          {portal.nav.map(({ to, label, icon: Icon, end }) => (
-            <li key={to}>
-              <NavLink
-                to={to}
-                end={end}
-                onClick={onNavigate}
-                className={({ isActive }) =>
-                  cn(
-                    "group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                    isActive
-                      ? `bg-gradient-to-r ${portal.accentGradient} bg-opacity-15 text-slate-900 ring-1 ring-inset ${portal.accentRing} dark:text-white`
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white",
-                  )
-                }
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+        {(() => {
+          const ungrouped = portal.nav.filter((n) => !n.group);
+          const grouped = portal.nav.filter((n) => !!n.group);
+          const groupOrder: string[] = [];
+          grouped.forEach((n) => {
+            if (n.group && !groupOrder.includes(n.group)) groupOrder.push(n.group);
+          });
+
+          return (
+            <ul className="space-y-0.5">
+              {ungrouped.map(({ to, label, icon: Icon, end }) => (
+                <li key={to}>
+                  <NavLink
+                    to={to}
+                    end={end}
+                    onClick={onNavigate}
+                    className={({ isActive }) =>
+                      cn(
+                        "group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                        isActive
+                          ? `bg-gradient-to-r ${portal.accentGradient} bg-opacity-15 text-slate-900 ring-1 ring-inset ${portal.accentRing} dark:text-white`
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white",
+                      )
+                    }
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </NavLink>
+                </li>
+              ))}
+
+              {groupOrder.map((group) => {
+                const groupItems = grouped.filter((n) => n.group === group);
+                return (
+                  <li key={group}>
+                    <p className="mt-5 mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">
+                      {group}
+                    </p>
+                    <ul className="space-y-0.5">
+                      {groupItems.map(({ to, label, icon: Icon, end }) => (
+                        <li key={to}>
+                          <NavLink
+                            to={to}
+                            end={end}
+                            onClick={onNavigate}
+                            className={({ isActive }) =>
+                              cn(
+                                "group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                                isActive
+                                  ? `bg-gradient-to-r ${portal.accentGradient} bg-opacity-15 text-slate-900 ring-1 ring-inset ${portal.accentRing} dark:text-white`
+                                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white",
+                              )
+                            }
+                          >
+                            <Icon className="h-4 w-4" />
+                            {label}
+                          </NavLink>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                );
+              })}
+            </ul>
+          );
+        })()}
       </nav>
 
       <div className="border-t border-slate-200/70 p-3 dark:border-white/10">
